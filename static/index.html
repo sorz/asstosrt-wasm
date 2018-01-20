@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>rust web test</title>
+  </head>
+  <body>
+    <form>
+      <input type="file" id="files" multiple>
+      <button type="submit" id="submit">Submit</button>
+    </form>
+    <script>
+      let $ = s => document.querySelector(s);
+      let worker = new Worker("worker.js");
+
+      $("form").addEventListener('submit', e => {
+        e.preventDefault();
+        let files = $("#files").files;
+        if (files.length == 0) {
+          alert("Please select one or more files.");
+          return;
+        }
+        // TODO: support multiple files
+        try {
+          convertFile(files.item(0));
+        } catch (e) {
+          alert("Error: " + e);
+        }
+      });
+
+      function convertFile(file) {
+        if (file.size > 100 * 1024 * 1024)
+          throw "file too large (> 100 MiB)";
+        worker.postMessage(file);
+      }
+
+      worker.onmessage = function(e) {
+        let srt = e.data;
+        console.log(srt);
+      }
+    </script>
+  </body>
+</html>
