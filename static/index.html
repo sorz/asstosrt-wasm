@@ -35,8 +35,13 @@
       }
 
       worker.onmessage = function(e) {
-        let srt = e.data;
-        console.log(srt);
+        let result = e.data;
+        if (result.error) {
+          alert(result.error);
+          return;
+        }
+        let srtUrl = result.srtUrl;
+        console.log(srtUrl);
       }
     </script>
   </body>
