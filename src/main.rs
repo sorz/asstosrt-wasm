@@ -59,10 +59,18 @@ fn ass_to_srt(ass: ArrayBuffer,
         Ok(s) => s,
         Err(e) => throw!(e),
     };
-    let srt = out_charset.encode(&srt, EncoderTrap::Replace)
+
+    let mut output = Vec::new();
+    // insert BOM for utf-16
+    if out_charset.whatwg_name().map_or(false, |n| n.starts_with("utf-16")) {
+        out_charset.encode_to("\u{feff}", EncoderTrap::Strict, &mut output)
+            .unwrap_or_else(|e| log!(format!("fail to insert BOM: {}", e)));
+    }
+
+    out_charset.encode_to(&srt, EncoderTrap::Replace, &mut output)
         .unwrap_or_else(|e| throw!(format!("fail to encode: {}", e)));
-    let srt = unsafe { UnsafeTypedArray::new(&srt) };
-    js! (return new Blob([@{srt}], {type: "text/srt"}))
+    let output = unsafe { UnsafeTypedArray::new(&output) };
+    js! (return new Blob([@{output}], {type: "text/srt"}))
 }
 
 fn main() {
