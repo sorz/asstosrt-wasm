@@ -9,8 +9,9 @@ onmessage = async function(e) {
   console.log("convert " + file.name);
 
   try {
-    let ass = reader.readAsText(file);
-    let srt = wasm.assToSrt(ass, null);
+    let ass = reader.readAsArrayBuffer(file);
+    console.log(ass);
+    let srt = wasm.assToSrt(ass, null, null);
     console.log(srt);
     let srtUrl = URL.createObjectURL(srt);
     postMessage({file: file, srtUrl: srtUrl});

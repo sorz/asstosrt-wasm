@@ -4,9 +4,9 @@ extern crate encoding;
 extern crate asstosrt_wasm;
 
 use stdweb::{Value, UnsafeTypedArray};
+use stdweb::web::ArrayBuffer;
 use encoding::all::UTF_8;
-use encoding::types::EncodingRef;
-use encoding::types::EncoderTrap;
+use encoding::types::{EncodingRef, EncoderTrap, DecoderTrap};
 use encoding::label::encoding_from_whatwg_label;
 
 
@@ -19,10 +19,19 @@ macro_rules! throw {
     };
 }
 
-fn ass_to_srt(ass: String, out_charset: Option<String>) -> Value {
+fn ass_to_srt(ass: ArrayBuffer,
+              in_charset: Option<String>,
+              out_charset: Option<String>,
+        ) -> Value {
+    let in_charset = in_charset.map_or(UTF_8 as EncodingRef,
+        |l| encoding_from_whatwg_label(&l)
+            .unwrap_or_else(|| throw!("invalid ASS charset name")));
     let out_charset = out_charset.map_or(UTF_8 as EncodingRef,
         |l| encoding_from_whatwg_label(&l)
-            .unwrap_or_else(|| throw!("invalid output charset name")));
+            .unwrap_or_else(|| throw!("invalid SRT charset name")));
+
+    let ass = in_charset.decode(&ass.into(), DecoderTrap::Replace)
+        .unwrap_or_else(|e| throw!(format!("fail to decode: {}", e)));
     let srt = match asstosrt_wasm::ass_to_srt(&ass, true) {
         Ok(s) => s,
         Err(e) => throw!(e),
