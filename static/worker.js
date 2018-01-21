@@ -10,9 +10,9 @@ onmessage = async function(e) {
 
   try {
     let ass = reader.readAsText(file);
-    let srt = wasm.assToSrt(ass);
-    let srtFile = new Blob([srt], {type: 'text/srt'});
-    let srtUrl = URL.createObjectURL(srtFile);
+    let srt = wasm.assToSrt(ass, "gbk");
+    console.log(srt);
+    let srtUrl = URL.createObjectURL(srt);
     postMessage({file: file, srtUrl: srtUrl});
   } catch (e) {
     postMessage({file: file, error: e});

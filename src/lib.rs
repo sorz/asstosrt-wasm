@@ -101,7 +101,8 @@ fn to_srt_time(t: u32) -> String {
     format!("{:02}:{:02}:{:02},{:03}", h, m, s, ms)
 }
 
-pub fn ass_to_srt(ass: &str, no_effect: bool) -> Result<String, &'static str> {
+pub fn ass_to_srt(ass: &str, no_effect: bool)
+        -> Result<String, &'static str> {
     // find lines within [Events]
     let mut events = ass.lines()
         .skip_while(|l| !l.starts_with("[Events]"))

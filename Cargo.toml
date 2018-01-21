@@ -7,3 +7,4 @@ authors = ["sorz <orz@sorz.org>"]
 stdweb = "0.3"
 regex = "0.2"
 lazy_static = "1.0"
+encoding = "0.2"
