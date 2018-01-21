@@ -4,6 +4,8 @@ extern crate encoding;
 extern crate asstosrt_wasm;
 
 use stdweb::{Value, UnsafeTypedArray};
+use encoding::all::UTF_8;
+use encoding::types::EncodingRef;
 use encoding::types::EncoderTrap;
 use encoding::label::encoding_from_whatwg_label;
 
@@ -17,9 +19,10 @@ macro_rules! throw {
     };
 }
 
-fn ass_to_srt(ass: String, out_charset: String) -> Value {
-    let out_charset = encoding_from_whatwg_label(&out_charset)
-        .unwrap_or_else(|| throw!("invalid output charset name"));
+fn ass_to_srt(ass: String, out_charset: Option<String>) -> Value {
+    let out_charset = out_charset.map_or(UTF_8 as EncodingRef,
+        |l| encoding_from_whatwg_label(&l)
+            .unwrap_or_else(|| throw!("invalid output charset name")));
     let srt = match asstosrt_wasm::ass_to_srt(&ass, true) {
         Ok(s) => s,
         Err(e) => throw!(e),

@@ -10,7 +10,7 @@ onmessage = async function(e) {
 
   try {
     let ass = reader.readAsText(file);
-    let srt = wasm.assToSrt(ass, "gbk");
+    let srt = wasm.assToSrt(ass, null);
     console.log(srt);
     let srtUrl = URL.createObjectURL(srt);
     postMessage({file: file, srtUrl: srtUrl});
