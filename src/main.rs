@@ -1,13 +1,14 @@
 #[macro_use]
 extern crate stdweb;
 extern crate encoding;
+extern crate chardet;
 extern crate asstosrt_wasm;
 
 use stdweb::{Value, UnsafeTypedArray};
 use stdweb::web::ArrayBuffer;
-use encoding::all::UTF_8;
 use encoding::types::{EncodingRef, EncoderTrap, DecoderTrap};
 use encoding::label::encoding_from_whatwg_label;
+use chardet::charset2encoding;
 
 
 macro_rules! throw {
@@ -19,18 +20,40 @@ macro_rules! throw {
     };
 }
 
+macro_rules! log {
+    ( $e:expr ) => {
+        {
+            let output = $e;
+            js!( console.log(@{output}) );
+        }
+    };
+}
+
+
+fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
+    if s.len() > 4096 {
+        s = &s[..4096];
+    }
+    let result = chardet::detect(s);
+    log!(format!("chardet {:?}", result));
+    encoding_from_whatwg_label(charset2encoding(&result.0))
+}
+
 fn ass_to_srt(ass: ArrayBuffer,
               in_charset: Option<String>,
               out_charset: Option<String>,
         ) -> Value {
-    let in_charset = in_charset.map_or(UTF_8 as EncodingRef,
+    let ass: Vec<u8> = ass.into();
+    let in_charset = in_charset.map_or_else(
+        || detect_charset(&ass)
+            .unwrap_or_else(|| throw!("fail to detect ASS charset")),
         |l| encoding_from_whatwg_label(&l)
             .unwrap_or_else(|| throw!("invalid ASS charset name")));
-    let out_charset = out_charset.map_or(UTF_8 as EncodingRef,
+    let out_charset = out_charset.map_or(in_charset,
         |l| encoding_from_whatwg_label(&l)
             .unwrap_or_else(|| throw!("invalid SRT charset name")));
 
-    let ass = in_charset.decode(&ass.into(), DecoderTrap::Replace)
+    let ass = in_charset.decode(&ass, DecoderTrap::Replace)
         .unwrap_or_else(|e| throw!(format!("fail to decode: {}", e)));
     let srt = match asstosrt_wasm::ass_to_srt(&ass, true) {
         Ok(s) => s,
