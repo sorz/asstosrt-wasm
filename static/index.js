@@ -15,7 +15,7 @@ function addFile(file) {
   let content = document.importNode(template, true).content;
   content.querySelector(".file").id = `file-${id}`;
   content.querySelector(".name").textContent = file.name;
-  content.querySelector(".link").download = `${file.name}.srt`;
+  content.querySelector(".save").download = `${file.name}.srt`;
   content.querySelector(".close").addEventListener("click", event => {
     event.preventDefault();
     $(`#file-${id}`).outerHTML = "";
@@ -43,9 +43,8 @@ function onConvertDone(id, url) {
   let content = $(`#file-${id}`);
   content.classList.remove("progress");
   content.classList.add("done");
-  content.querySelector(".link").href = url;
+  content.querySelector(".save").href = url;
   content.querySelector(".close").addEventListener("click", event => {
-    console.log("revoke");
     URL.revokeObjectURL(url);
   });
 }
