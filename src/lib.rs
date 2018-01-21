@@ -1,5 +1,10 @@
+#[macro_use]
+extern crate lazy_static;
+extern crate regex;
+
 use std::collections::HashMap;
 use std::cmp::Ordering;
+use regex::Regex;
 
 struct DialogueFormat {
     cols: HashMap<String, usize>,
@@ -49,9 +54,14 @@ impl DialogueFormat {
 
 impl<'a> Dialogue<'a> {
     fn as_srt(&self) -> String {
+        lazy_static! {
+            static ref RE_CMD: Regex = Regex::new(r"\{.*?\}").unwrap();
+        }
         let start = to_srt_time(self.start_cents);
         let end = to_srt_time(self.end_cents);
-        format!("{} --> {}\r\n{}\r\n\r\n", start, end, self.text)
+        let text = RE_CMD.replace_all(self.text, "");
+        let text = text.replace(r"\n", "\r\n").replace(r"\N", "\r\n");
+        format!("{} --> {}\r\n{}\r\n\r\n", start, end, text)
     }
 }
 
@@ -121,12 +131,12 @@ fn test_ass_to_srt() {
 [Events]
 Format: Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 0:02:42.42,0:02:44.05,main,b,0,0,0,,Something...
-Dialogue: 0:02:40.65,0:02:41.79,main,a,0,0,0,,Hello, world!~
+Dialogue: 0:02:40.65,0:02:41.79,main,a,0,0,0,,Hello,\nworld!~
 Dialogue: 0:02:40.65,0:02:41.79,main,a,0,0,0,x,[Effect]
 "#;
     let srt = "\
 00:02:40,650 --> 00:02:41,790\r\n\
-Hello, world!~\r\n\r\n\
+Hello,\r\nworld!~\r\n\r\n\
 00:02:42,420 --> 00:02:44,050\r\n\
 Something...\r\n\r\n";
     let result = ass_to_srt(ass, true).unwrap();
