@@ -3,46 +3,47 @@
   <head>
     <meta charset="utf-8">
     <title>rust web test</title>
+    <style>
+      #list > li a { display: none; }
+      #list > li.progress status::after { content: "Converting"; }
+      #list > li.done status::after { content: "Done"; }
+      #list > li.done a { display: inline; }
+    </style>
   </head>
   <body>
     <form>
+      <p><label for="in-charset">ASS Encoding</label>
+        <input type="text" id="in-charset" list="charsets"
+          placeholder="auto detect"></p>
+      <p><label for="out-charset">SRT Encoding</label>
+        <input type="text" id="out-charset" list="charsets"
+          placeholder="no change"></p>
       <input type="file" id="files" multiple>
-      <button type="submit" id="submit">Submit</button>
+
+      <datalist id="charsets">
+        <option label="Unicode (UTF-8)" value="utf-8">
+        <option label="Unicode (UTF-16)" value="utf-16">
+        <option label="Simplified Chinese (GB18030)" value="gb18030">
+        <option label="Traditional Chinese (Big5)" value="big5">
+        <option label="Japanese (Shift-JIS)" value="shift-jis">
+      </datalist>
     </form>
-    <script>
-      let $ = s => document.querySelector(s);
-      let worker = new Worker("worker.js");
 
-      $("form").addEventListener('submit', e => {
-        e.preventDefault();
-        let files = $("#files").files;
-        if (files.length == 0) {
-          alert("Please select one or more files.");
-          return;
-        }
-        // TODO: support multiple files
-        try {
-          convertFile(files.item(0));
-        } catch (e) {
-          alert("Error: " + e);
-        }
-      });
+    <ul id="list">
+    </ul>
 
-      function convertFile(file) {
-        if (file.size > 100 * 1024 * 1024)
-          throw "file too large (> 100 MiB)";
-        worker.postMessage(file);
-      }
-
-      worker.onmessage = function(e) {
-        let result = e.data;
-        if (result.error) {
-          alert(result.error);
-          return;
-        }
-        let srtUrl = result.srtUrl;
-        console.log(srtUrl);
-      }
-    </script>
+    <template id="file">
+      <li class="file progress">
+        <p>
+          <span class="name"></span>
+          <a class="close" title="Close" href="#">×</a>
+        </p>
+        <p>
+          <span class="status"></span>
+          <a class="link">Save</a>
+        </p>
+      </li>
+    </template>
+    <script src="index.js"></script>
   </body>
 </html>
