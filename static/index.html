@@ -8,6 +8,9 @@
       h1 { color: gray; font-size: 1.8em; }
       h2 { color: darkslategrey; font-size: 1.2em; margin-top: 1.5em; }
       form label { display: inline-block; width: 7em; }
+      footer { margin-top: 3em; color: lightgray; font-size: 0.8em; }
+      footer p { margin: 0; }
+      footer a { color: lightgray; }
       #list { list-style: none; padding: 0; max-width: 600px; }
       #list > li { border-bottom: solid 1px lightgray; padding: 15px; }
       #list > li:hover { background: lightyellow; }
@@ -31,8 +34,9 @@
     <h1><abbr title="Advanced SubStation Alpha">ASS</abbr> /
       <abbr title="SubStation Alpha">SSA</abbr> to
       <abbr title="SubRip">SRT</abbr> Subtitles Converter</h1>
-    <p>Your file would NOT be uploaded to anywhere.
-      Only support for those newer browsers.</p>
+    <p>Only support for those newer browsers.
+      You can <a href="https://lab.sorz.org/tools/asstosrt/">try this</a>
+      if you have problem with it.</p>
 
     <form>
       <h2>Settings</h2>
@@ -57,7 +61,6 @@
     <h2>Results</h2>
     <ul id="list">
     </ul>
-
     <template id="file">
       <li class="file progress">
           <span class="name"></span>
@@ -66,6 +69,15 @@
           <a class="save">💾 SAVE</a>
       </li>
     </template>
+
+    <footer>
+      <p>Your file would NOT be uploaded to anywhere.</p>
+      <p>Powered by <a href="https://www.rust-lang.org/"
+                       title="The Rust Programming Language">Rust</a>
+        and a set of lovely open-source projects.</p>
+      <p>Source code is avaiable on
+        <a href="https://github.com/sorz/asstosrt-wasm">GitHub</a>.</p>
+    </footer>
     <script src="index.js"></script>
   </body>
 </html>
