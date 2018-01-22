@@ -37,14 +37,14 @@ if( typeof Rust === 'undefined' ) {
             "__extjs_0088e2fb885208bbfc4a92f3ec5c1d71feadeb9d": function($0, $1) {
                 $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){console.log (($1))})());
             },
-            "__extjs_40ce095ca5699fdfedc424caf7ad10d722ac834e": function($0, $1) {
-                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){throw ($1)})());
-            },
             "__extjs_59a7fdff407d920fdf906fe9f19914760fd411a1": function($0, $1) {
                 $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){return new Blob ([($1)], {type : "text/srt"})})());
             },
             "__extjs_6eae44ebf97fc6fe695ffec931981252d8cce82c": function($0, $1) {
                 $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){Module.exports.assToSrt = ($1);})());
+            },
+            "__extjs_40ce095ca5699fdfedc424caf7ad10d722ac834e": function($0, $1) {
+                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){throw ($1)})());
             },
             "__extjs_d0f9580b9cfe82e2ee67d3707e52d87bbabe59f2": function() {
                 Module.STDWEB = {};
@@ -75,6 +75,12 @@ if( typeof Rust === 'undefined' ) {
             },
             "__extjs_20637d8f642203b38c263a5d0f43b9d88ec67c31": function($0, $1, $2) {
                 console.error( 'Panic location:', Module.STDWEB.to_js_string( $0, $1 ) + ':' + $2 );
+            },
+            "__extjs_ac7ced275c794bbaa5f758ba4a5c0d89d27a7023": function($0, $1) {
+                var object = Module.STDWEB.acquire_js_reference( $0 );Module.STDWEB.serialize_object( $1, object );
+            },
+            "__extjs_04dd9341c0b229d639d72dc9f8e0bffb983c60a1": function($0, $1) {
+                var array = Module.STDWEB.acquire_js_reference( $0 );Module.STDWEB.serialize_array( $1, array );
             },
             "__extjs_e28c795ff773d5944c05404ec094b4294feca54b": function($0) {
                 return Module.STDWEB.acquire_rust_reference( new Uint8Array( Module.STDWEB.acquire_js_reference( $0 ) ) );

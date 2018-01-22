@@ -8,6 +8,7 @@
       h1 { color: gray; font-size: 1.8em; }
       h2 { color: darkslategrey; font-size: 1.2em; margin-top: 1.5em; }
       form label { display: inline-block; width: 7em; }
+      label[for=ignore-codec-err] { width: 10em; }
       footer { margin-top: 3em; color: lightgray; font-size: 0.8em; }
       footer p { margin: 0; }
       footer a { color: lightgray; }
@@ -38,7 +39,8 @@
       You can <a href="https://lab.sorz.org/tools/asstosrt/">try this</a>
       if you have problem with it.</p>
 
-    <form>
+    <form ondrop="onDrop(event);" ondragover="onDropOver(event);"
+        ondragend="onDropEnd(event);">
       <h2>Settings</h2>
       <p><label for="in-charset">ASS Encoding</label>
         <input type="text" id="in-charset" list="charsets"
@@ -46,13 +48,22 @@
       <p><label for="out-charset">SRT Encoding</label>
         <input type="text" id="out-charset" list="charsets"
           placeholder="no change"></p>
+      <p><label for="ignore-codec-err">Ignore encoding errors</label>
+        <input type="checkbox" id="ignore-codec-err"></p>
       <p><label for="chinese-conv">Chinese Convert</label>
         <select id="chinese-conv">
-          <option value="" selected>Disabled</option>
-          <option value="t2s">To Simplified</option>
-          <option value="s2t">To Traditional</option>
+          <option value="None" selected>disabled</option>
+          <option value="T2S">to Simplified</option>
+          <option value="S2T">to Traditional</option>
+        </select>
+      <p><label for="lines">Lines</label>
+        <select id="lines">
+          <option value="All" selected>keep all</option>
+          <option value="First">first line only</option>
+          <option value="Last">last line only</option>
         </select>
       <h2>Input Files</h2>
+      <p>Drag &amp; drop to here; or
       <input type="file" id="files" multiple>
 
       <datalist id="charsets">
