@@ -2,12 +2,30 @@ let $ = s => document.querySelector(s);
 let worker = new Worker("worker.js");
 let nextId = 1;
 
-$("#files").addEventListener("change", event => {
-  let files = event.target.files;
+$("#files").addEventListener("change", ev => {
+  let files = ev.target.files;
   for (let i = 0; i < files.length; i++) {
     addFile(files.item(i));
   }
 });
+
+function onDrop(ev) {
+  ev.preventDefault();
+  let items = ev.dataTransfer.items;
+  for (let i=0; i < items.length; i++) {
+    if (items[i].kind == "file") {
+      addFile(items[i].getAsFile());
+    }
+  }
+};
+
+function onDropOver(ev) {
+  ev.preventDefault();
+};
+
+function onDropEnd(ev) {
+  ev.dataTransfer.clearData();
+}
 
 function addFile(file) {
   let id = nextId++;

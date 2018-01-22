@@ -39,7 +39,8 @@
       You can <a href="https://lab.sorz.org/tools/asstosrt/">try this</a>
       if you have problem with it.</p>
 
-    <form>
+    <form ondrop="onDrop(event);" ondragover="onDropOver(event);"
+        ondragend="onDropEnd(event);">
       <h2>Settings</h2>
       <p><label for="in-charset">ASS Encoding</label>
         <input type="text" id="in-charset" list="charsets"
@@ -62,6 +63,7 @@
           <option value="Last">last line only</option>
         </select>
       <h2>Input Files</h2>
+      <p>Drag &amp; drop to here; or
       <input type="file" id="files" multiple>
 
       <datalist id="charsets">
