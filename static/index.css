@@ -22,4 +22,3 @@ footer a { color: lightgray; }
 #list > li.progress .status::before { content: "converting…"; }
 #list > li.done .save { display: inline; }
 #list > li.error .status { color: lightcoral; }
-#list > li.error .status::before { content: "error: "; }
