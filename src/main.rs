@@ -35,13 +35,34 @@ macro_rules! log {
 }
 
 #[derive(Deserialize, Debug)]
+struct Charset (String);
+
+#[derive(Deserialize, Debug)]
+enum Lines {
+    First, Last, All
+}
+
+#[derive(Deserialize, Debug)]
+enum ChineseConv {
+    None, S2T, T2S,
+}
+
+
+#[derive(Deserialize, Debug)]
 struct Options {
-    in_charset: Option<String>,
-    out_charset: Option<String>,
-    chinese_conv: Option<String>,
-    lines: Option<String>,
+    in_charset: Option<Charset>,
+    out_charset: Option<Charset>,
+    chinese_conv: ChineseConv,
+    lines: Lines,
 }
 js_deserializable!(Options);
+
+impl Into<EncodingRef> for Charset {
+    fn into(self) -> EncodingRef {
+        encoding_from_whatwg_label(&self.0)
+            .unwrap_or_else(|| throw!("unknown charset name"))
+    }
+}
 
 fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
     if s.len() > 4096 {
@@ -57,24 +78,19 @@ fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
     let in_charset = opts.in_charset.map_or_else(
         || detect_charset(&ass)
             .unwrap_or_else(|| throw!("fail to detect ASS charset")),
-        |l| encoding_from_whatwg_label(&l)
-            .unwrap_or_else(|| throw!("invalid ASS charset name")));
-    let out_charset = opts.out_charset.map_or(in_charset,
-        |l| encoding_from_whatwg_label(&l)
-            .unwrap_or_else(|| throw!("invalid SRT charset name")));
-    let dict = opts.chinese_conv.map(|c| match c.as_str() {
-        "s2t" => Dict::default_s2t(),
-        "t2s" => Dict::default_t2s(),
-        _ => throw!("unknown chinese convert option"),
-    });
-    let lines = opts.lines.unwrap_or(String::from(""));
+        |l| l.into());
+    let out_charset = opts.out_charset.map_or(in_charset, |l| l.into());
+    let dict = match opts.chinese_conv {
+        ChineseConv::S2T => Some(Dict::default_s2t()),
+        ChineseConv::T2S => Some(Dict::default_t2s()),
+        ChineseConv::None => None,
+    };
+    let lines = opts.lines;
     let mapper = move |s: String| {
-        if lines == "first" {
-            s.lines().next()
-        } else if lines == "last" {
-            s.lines().last()
-        } else {
-            Some(s.as_str())
+        match lines {
+            Lines::First => s.lines().next(),
+            Lines::Last => s.lines().last(),
+            Lines::All => Some(s.as_str()),
         }.map(|s| dict.map_or(s.into(), |d| d.replace_all(s)))
     };
 
