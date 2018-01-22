@@ -10,6 +10,8 @@ use encoding::types::{EncodingRef, EncoderTrap, DecoderTrap};
 use encoding::label::encoding_from_whatwg_label;
 use chardet::charset2encoding;
 
+use asstosrt_wasm::subtitle;
+
 
 macro_rules! throw {
     ( $e:expr ) => {
@@ -55,7 +57,7 @@ fn ass_to_srt(ass: ArrayBuffer,
 
     let ass = in_charset.decode(&ass, DecoderTrap::Replace)
         .unwrap_or_else(|e| throw!(format!("fail to decode: {}", e)));
-    let srt = match asstosrt_wasm::ass_to_srt(&ass, true) {
+    let srt = match subtitle::ass_to_srt(&ass, true) {
         Ok(s) => s,
         Err(e) => throw!(e),
     };
