@@ -1,0 +1,25 @@
+body { margin: 1em 3em; }
+h1 { color: gray; font-size: 1.8em; margin-top: 1.2em; }
+h2 { color: darkslategrey; font-size: 1.2em; margin-top: 1.5em; }
+form label { display: inline-block; width: 7em; }
+label[for=ignore-codec-err] { width: 10em; }
+footer { margin-top: 3em; color: lightgray; font-size: 0.8em; }
+footer p { margin: 0; }
+footer a { color: lightgray; }
+#list { list-style: none; padding: 0; max-width: 600px; }
+#list > li { border-bottom: solid 1px lightgray; padding: 15px; }
+#list > li:hover { background: lightyellow; }
+#list > li:last-child { border-bottom: none; }
+#list > li .name { margin-right: 1em; }
+#list > li a { float: right; margin-left: 1em; text-decoration: none; }
+#list > li .close { color: lightgray; }
+#list > li .close:hover { color: lightcoral; }
+#list > li .save { color: gray; }
+#list > li .save:hover { color: darkslategray; }
+
+#list > li .save { display: none; }
+#list > li.progress .status { color: lightgray; }
+#list > li.progress .status::before { content: "converting…"; }
+#list > li.done .save { display: inline; }
+#list > li.error .status { color: lightcoral; }
+#list > li.error .status::before { content: "error: "; }
