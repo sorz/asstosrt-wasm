@@ -24,13 +24,14 @@ function addFile(file) {
 
   if (file.size > 100 * 1024 * 1024)
     return onConvertError(id, "file too large (> 100 MiB)");
-  let inCharset = $("#in-charset").value || null;
-  let outCharset = $("#out-charset").value || null;
-  let chineseConv = $("#chinese-conv").value || null;
+  let opts = {
+    in_charset: $("#in-charset").value || null,
+    out_charset: $("#out-charset").value || null,
+    chinese_conv: $("#chinese-conv").value || null,
+    lines: $("#lines").value || null
+  };
   worker.postMessage({
-    id: id, file: file,
-    inCharset: inCharset, outCharset: outCharset,
-    chineseConv: chineseConv
+    id: id, file: file, opts: opts
   });
 }
 
