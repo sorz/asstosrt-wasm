@@ -55,12 +55,16 @@ enum Lines { First, Last, All }
 #[derive(Deserialize, Debug)]
 enum ChineseConv { None, S2T, T2S }
 
+#[derive(Deserialize, Debug, Clone, Copy)]
+struct IgnoreCodecErr (bool);
+
 #[derive(Deserialize, Debug)]
 struct Options {
     in_charset: Option<Charset>,
     out_charset: Option<Charset>,
     chinese_conv: ChineseConv,
     lines: Lines,
+    ignore_codec_err: IgnoreCodecErr,
 }
 js_deserializable!(Options);
 
@@ -69,6 +73,27 @@ impl Into<EncodingRef> for Charset {
         try_js!(encoding_from_whatwg_label(&self.0), "unknown charset name")
     }
 }
+
+impl Into<EncoderTrap> for IgnoreCodecErr {
+    fn into(self) -> EncoderTrap {
+        if self.0 {
+            EncoderTrap::Replace
+        } else {
+            EncoderTrap::Strict
+        }
+    }
+}
+
+impl Into<DecoderTrap> for IgnoreCodecErr {
+    fn into(self) -> DecoderTrap {
+        if self.0 {
+            DecoderTrap::Replace
+        } else {
+            DecoderTrap::Strict
+        }
+    }
+}
+
 
 fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
     if s.len() > 4096 {
@@ -99,8 +124,8 @@ fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
         }.map(|s| dict.map_or(s.into(), |d| d.replace_all(s)))
     };
 
-    let ass = try_js!(in_charset.decode(&ass, DecoderTrap::Replace),
-        "fail to decode", err);
+    let ass = try_js!(in_charset.decode(&ass,
+            opts.ignore_codec_err.into()), "fail to decode", err);
     let srt = try_js!(subtitle::ass_to_srt(&ass, true, Some(mapper)));
 
     let mut output = Vec::new();
@@ -110,8 +135,8 @@ fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
             "\u{feff}", EncoderTrap::Strict, &mut output));
     }
 
-    try_js!(out_charset.encode_to(&srt, EncoderTrap::Replace, &mut output),
-        "fail to encode", err);
+    try_js!(out_charset.encode_to(&srt,
+        opts.ignore_codec_err.into(), &mut output), "fail to encode", err);
     let output = unsafe { UnsafeTypedArray::new(&output) };
     js! (return new Blob([@{output}], {type: "text/srt"}))
 }

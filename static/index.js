@@ -28,7 +28,8 @@ function addFile(file) {
     in_charset: $("#in-charset").value || null,
     out_charset: $("#out-charset").value || null,
     chinese_conv: $("#chinese-conv").value || null,
-    lines: $("#lines").value
+    lines: $("#lines").value,
+    ignore_codec_err: $("#ignore-codec-err").checked
   };
   worker.postMessage({
     id: id, file: file, opts: opts

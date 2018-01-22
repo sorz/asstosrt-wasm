@@ -8,6 +8,7 @@
       h1 { color: gray; font-size: 1.8em; }
       h2 { color: darkslategrey; font-size: 1.2em; margin-top: 1.5em; }
       form label { display: inline-block; width: 7em; }
+      label[for=ignore-codec-err] { width: 10em; }
       footer { margin-top: 3em; color: lightgray; font-size: 0.8em; }
       footer p { margin: 0; }
       footer a { color: lightgray; }
@@ -46,6 +47,8 @@
       <p><label for="out-charset">SRT Encoding</label>
         <input type="text" id="out-charset" list="charsets"
           placeholder="no change"></p>
+      <p><label for="ignore-codec-err">Ignore encoding errors</label>
+        <input type="checkbox" id="ignore-codec-err"></p>
       <p><label for="chinese-conv">Chinese Convert</label>
         <select id="chinese-conv">
           <option value="None" selected>disabled</option>
