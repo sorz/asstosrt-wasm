@@ -49,15 +49,19 @@ impl DialogueFormat {
 }
 
 impl<'a> Dialogue<'a> {
-    fn as_srt(&self) -> String {
+    fn plain_text(&self) -> String {
         lazy_static! {
             static ref RE_CMD: Regex = Regex::new(r"\{.*?\}").unwrap();
         }
+        RE_CMD.replace_all(self.text, "")
+            .replace(r"\n", "\r\n")
+            .replace(r"\N", "\r\n")
+    }
+
+    fn srt_timeline(&self) -> String {
         let start = to_srt_time(self.start_cents);
         let end = to_srt_time(self.end_cents);
-        let text = RE_CMD.replace_all(self.text, "");
-        let text = text.replace(r"\n", "\r\n").replace(r"\N", "\r\n");
-        format!("{} --> {}\r\n{}\r\n\r\n", start, end, text)
+        format!("{} --> {}", start, end)
     }
 }
 
@@ -97,8 +101,9 @@ fn to_srt_time(t: u32) -> String {
     format!("{:02}:{:02}:{:02},{:03}", h, m, s, ms)
 }
 
-pub fn ass_to_srt(ass: &str, no_effect: bool)
-        -> Result<String, &'static str> {
+pub fn ass_to_srt<F>(ass: &str, no_effect: bool, mut mapper: Option<F>)
+        -> Result<String, &'static str>
+    where F: FnMut(String) -> Option<String> {
     // find lines within [Events]
     let mut events = ass.lines()
         .skip_while(|l| !l.starts_with("[Events]"))
@@ -117,7 +122,14 @@ pub fn ass_to_srt(ass: &str, no_effect: bool)
         .collect::<Vec<_>>();
     // to srt
     dialogues.sort();
-    Ok(dialogues.iter().map(|d| d.as_srt()).collect())
+    Ok(dialogues.iter()
+       .filter_map(|d| {
+           let text = d.plain_text();
+           match mapper {
+               Some(ref mut f) => f(text),
+               None => Some(text),
+           }.map(|text| format!("{}\r\n{}\r\n\r\n", d.srt_timeline(), text))
+       }).collect())
 }
 
 
@@ -136,7 +148,8 @@ Dialogue: 0:02:40.65,0:02:41.79,main,a,0,0,0,x,[Effect]
 Hello,\r\nworld!~\r\n\r\n\
 00:02:42,420 --> 00:02:44,050\r\n\
 Something...\r\n\r\n";
-    let result = ass_to_srt(ass, true).unwrap();
+    let conv = |s| Some(s);
+    let result = ass_to_srt(ass, true, Some(conv)).unwrap();
     assert_eq!(result, srt);
 }
 

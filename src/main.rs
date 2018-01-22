@@ -11,6 +11,7 @@ use encoding::label::encoding_from_whatwg_label;
 use chardet::charset2encoding;
 
 use asstosrt_wasm::subtitle;
+use asstosrt_wasm::simplecc::Dict;
 
 
 macro_rules! throw {
@@ -44,6 +45,7 @@ fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
 fn ass_to_srt(ass: ArrayBuffer,
               in_charset: Option<String>,
               out_charset: Option<String>,
+              chinese_conv: Option<String>,
         ) -> Value {
     let ass: Vec<u8> = ass.into();
     let in_charset = in_charset.map_or_else(
@@ -54,13 +56,16 @@ fn ass_to_srt(ass: ArrayBuffer,
     let out_charset = out_charset.map_or(in_charset,
         |l| encoding_from_whatwg_label(&l)
             .unwrap_or_else(|| throw!("invalid SRT charset name")));
+    let conv = chinese_conv.map(|c| match c.as_str() {
+        "s2t" => Dict::default_s2t(),
+        "t2s" => Dict::default_t2s(),
+        _ => throw!("unknown chinese convert option"),
+    }).map(|dict| move |s: String| Some(dict.replace_all(&s)));
 
     let ass = in_charset.decode(&ass, DecoderTrap::Replace)
         .unwrap_or_else(|e| throw!(format!("fail to decode: {}", e)));
-    let srt = match subtitle::ass_to_srt(&ass, true) {
-        Ok(s) => s,
-        Err(e) => throw!(e),
-    };
+    let srt = subtitle::ass_to_srt(&ass, true, conv)
+        .unwrap_or_else(|e| throw!(e));
 
     let mut output = Vec::new();
     // insert BOM for utf-16

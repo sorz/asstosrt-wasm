@@ -26,9 +26,11 @@ function addFile(file) {
     return onConvertError(id, "file too large (> 100 MiB)");
   let inCharset = $("#in-charset").value || null;
   let outCharset = $("#out-charset").value || null;
+  let chineseConv = $("#chinese-conv").value || null;
   worker.postMessage({
     id: id, file: file,
-    inCharset: inCharset, outCharset: outCharset
+    inCharset: inCharset, outCharset: outCharset,
+    chineseConv: chineseConv
   });
 }
 
