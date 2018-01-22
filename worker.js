@@ -5,20 +5,22 @@ let reader = new FileReaderSync();
 
 onmessage = async function(e) {
   let id = e.data.id;
-  let file = e.data.file;
-  let inCharset = e.data.inCharset;
-  let outCharset = e.data.outCharset;
+  let opts = e.data;
 
   let wasm = await Rust.asstosrt_wasm;
-  console.log("convert " + file.name);
+  console.log("convert " + opts.file.name);
 
   try {
-    let ass = reader.readAsArrayBuffer(file);
-    let srt = wasm.assToSrt(ass, inCharset, outCharset);
+    let srt = wasm.assToSrt(
+      reader.readAsArrayBuffer(opts.file),
+      opts.inCharset,
+      opts.outCharset,
+      opts.chineseConv
+    );
     console.log(srt);
     let srtUrl = URL.createObjectURL(srt);
-    postMessage({id: id, file: file, srtUrl: srtUrl});
+    postMessage({id: id, srtUrl: srtUrl});
   } catch (e) {
-    postMessage({id: id, file: file, error: e});
+    postMessage({id: id, error: e});
   }
 }
