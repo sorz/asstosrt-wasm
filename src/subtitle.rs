@@ -1,16 +1,22 @@
 use std::collections::HashMap;
 use std::cmp::Ordering;
+use std::borrow::Cow;
+use std::str::FromStr;
+use std::fmt;
 use regex::Regex;
 
 struct DialogueFormat {
     cols: HashMap<String, usize>,
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+struct Centisec (u32);
+
 #[derive(PartialEq, Eq)]
 struct Dialogue<'a> {
-    start_cents: u32,
-    end_cents: u32,
-    text: &'a str,
+    start: Centisec,
+    end: Centisec,
+    text: Cow<'a, str>,
     effect: bool,
 }
 
@@ -32,73 +38,75 @@ impl DialogueFormat {
         let cols: Vec<_> = line[9..].splitn(self.cols.len(), ',')
             .map(|c| c.trim())
             .collect();
-        let start = self.cols.get("start").and_then(|i| cols.get(*i));
-        let end = self.cols.get("end").and_then(|i| cols.get(*i));
-        let text = self.cols.get("text").and_then(|i| cols.get(*i));
-        let effect = self.cols.get("effect").and_then(|i| cols.get(*i))
-            .map(|t| !t.trim().is_empty()).unwrap_or(false);
+        let get = |col| self.cols.get(col).and_then(|i| cols.get(*i));
+        let start = get("start").ok_or("'Start' not found")?.parse()?;
+        let end = get("end").ok_or("'End' not found")?.parse()?;
+        let text = get("text").ok_or("'Text' not found")?;
+        let effect = get("effect").map(|t| !t.trim().is_empty())
+                .unwrap_or(false);
         Ok(Dialogue {
-            start_cents: parse_time(start.ok_or("'Start' not found")?)
-                .map_err(|_| "start time format error")?,
-            end_cents: parse_time(end.ok_or("'End' not found")?)
-                .map_err(|_| "end time format error")?,
-            text: text.ok_or("'Text' not found")?,
-            effect,
+            start, end, effect, text: Cow::from(*text)
         })
     }
 }
 
 impl<'a> Dialogue<'a> {
-    fn plain_text(&self) -> String {
+    fn cleanse_text(&mut self) {
         lazy_static! {
             static ref RE_CMD: Regex = Regex::new(r"\{.*?\}").unwrap();
         }
-        RE_CMD.replace_all(self.text, "")
+        self.text = RE_CMD
+            .replace_all(&self.text, "")
             .replace(r"\n", "\r\n")
             .replace(r"\N", "\r\n")
+            .into();
     }
 
-    fn srt_timeline(&self) -> String {
-        let start = to_srt_time(self.start_cents);
-        let end = to_srt_time(self.end_cents);
-        format!("{} --> {}", start, end)
+    fn as_srt(&self) -> String {
+        format!("{} --> {}\r\n{}\r\n\r\n", self.start, self.end, self.text)
     }
 }
 
 impl<'a> Ord for Dialogue<'a> {
     fn cmp(&self, other: &Dialogue) -> Ordering {
-        self.start_cents.cmp(&other.start_cents)
+        self.start.cmp(&other.start)
     }
 }
 
 impl<'a> PartialOrd for Dialogue<'a> {
     fn partial_cmp(&self, other: &Dialogue) -> Option<Ordering> {
-        Some(self.start_cents.cmp(&other.start_cents))
+        Some(self.start.cmp(&other.start))
     }
 }
 
 /// parse "h:mm:ss.cc" to centisec.
-fn parse_time(t: &str) -> Result<u32, ()> {
-    let hmsc: Vec<u32> = t.split(|c| c == ':' || c == '.')
-        .filter_map(|s| s.parse().ok()).collect();
-    if hmsc.len() != 4 {
-        return Err(());
+impl FromStr for Centisec {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let hmsc: Vec<u32> = s.split(|c| c == ':' || c == '.')
+            .filter_map(|s| s.parse().ok()).collect();
+        if hmsc.len() != 4 {
+            return Err("time format error");
+        }
+        Ok(Centisec(
+            hmsc[0] * 60 * 60 * 100 +
+            hmsc[1] * 60 * 100 +
+            hmsc[2] * 100 +
+            hmsc[3]
+        ))
     }
-    Ok(
-        hmsc[0] * 60 * 60 * 100 +
-        hmsc[1] * 60 * 100 +
-        hmsc[2] * 100 +
-        hmsc[3]
-    )
 }
 
-/// convert centisec to "hh:mm:ss.mmm"
-fn to_srt_time(t: u32) -> String {
-    let h = t / 100 / 60 / 60;
-    let m = t / 100 / 60 % 60;
-    let s = t / 100 % 60;
-    let ms = t % 100 * 10;
-    format!("{:02}:{:02}:{:02},{:03}", h, m, s, ms)
+/// convert centisecs to "hh:mm:ss.mmm"
+impl fmt::Display for Centisec {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        let t = self.0;
+        let h = t / 100 / 60 / 60;
+        let m = t / 100 / 60 % 60;
+        let s = t / 100 % 60;
+        let ms = t % 100 * 10;
+        write!(f, "{:02}:{:02}:{:02},{:03}", h, m, s, ms)
+    }
 }
 
 pub fn ass_to_srt<F>(ass: &str, no_effect: bool, mut mapper: Option<F>)
@@ -122,14 +130,15 @@ pub fn ass_to_srt<F>(ass: &str, no_effect: bool, mut mapper: Option<F>)
         .collect::<Vec<_>>();
     // to srt
     dialogues.sort();
-    Ok(dialogues.iter()
-       .filter_map(|d| {
-           let text = d.plain_text();
-           match mapper {
-               Some(ref mut f) => f(text),
-               None => Some(text),
-           }.map(|text| format!("{}\r\n{}\r\n\r\n", d.srt_timeline(), text))
-       }).collect())
+    Ok(dialogues.into_iter()
+       .filter_map(|mut d| {
+           d.cleanse_text();
+           if let Some(ref mut f) = mapper {
+               d.text = f(d.text.into())?.into();
+           }
+           Some(d)
+       }).map(|d| d.as_srt())
+       .collect())
 }
 
 
