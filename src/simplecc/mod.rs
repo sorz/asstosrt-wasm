@@ -3,15 +3,12 @@ use std::collections::HashMap;
 #[cfg(test)]
 mod tests;
 
-const RAW_DICT_TS: &'static str = include_str!("ts.txt");
-const RAW_DICT_ST: &'static str = include_str!("st.txt");
-
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Dict {
     root: DictNode,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 enum DictNode {
     Leaf {
         key: Box<str>,
@@ -113,20 +110,6 @@ impl Dict {
                 dict.add(key, value)
             });
         Dict { root }
-    }
-
-    pub fn default_t2s() -> &'static Self {
-        lazy_static! {
-            static ref DICT: Dict = Dict::load(RAW_DICT_TS);
-        }
-        &DICT
-    }
-
-    pub fn default_s2t() -> &'static Self {
-        lazy_static! {
-            static ref DICT: Dict = Dict::load(RAW_DICT_ST);
-        }
-        &DICT
     }
 
     pub fn replace_all(&self, mut text: &str) -> String {

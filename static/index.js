@@ -2,19 +2,19 @@ let $ = s => document.querySelector(s);
 let worker = new Worker("worker.js");
 let nextId = 1;
 
-$("#files").addEventListener("change", ev => {
+$("#files").addEventListener("change", async ev => {
   let files = ev.target.files;
   for (let i = 0; i < files.length; i++) {
-    addFile(files.item(i));
+    await addFile(files.item(i));
   }
 });
 
-function onDrop(ev) {
+async function onDrop(ev) {
   ev.preventDefault();
   let items = ev.dataTransfer.items;
   for (let i=0; i < items.length; i++) {
     if (items[i].kind == "file") {
-      addFile(items[i].getAsFile());
+      await addFile(items[i].getAsFile());
     }
   }
 };
@@ -27,7 +27,7 @@ function onDropEnd(ev) {
   ev.dataTransfer.clearData();
 }
 
-function addFile(file) {
+async function addFile(file) {
   let id = nextId++;
   let template = document.querySelector("#file");
   let content = document.importNode(template, true).content;
@@ -42,15 +42,16 @@ function addFile(file) {
 
   if (file.size > 100 * 1024 * 1024)
     return onConvertError(id, "file too large (> 100 MiB)");
+
   let opts = {
     in_charset: $("#in-charset").value || null,
     out_charset: $("#out-charset").value || null,
-    chinese_conv: $("#chinese-conv").value || null,
     lines: $("#lines").value,
     ignore_codec_err: $("#ignore-codec-err").checked
   };
+  let dict = $("#chinese-conv").value;
   worker.postMessage({
-    id: id, file: file, opts: opts
+    id: id, file: file, dict: dict, opts: opts
   });
 }
 

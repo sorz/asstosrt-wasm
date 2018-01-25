@@ -4,13 +4,15 @@ extern crate stdweb;
 extern crate serde_derive;
 extern crate encoding;
 extern crate chardet;
+extern crate bincode;
 extern crate asstosrt_wasm;
 
-use stdweb::{Value, UnsafeTypedArray};
+use stdweb::{Value, UnsafeTypedArray, Reference};
 use stdweb::web::ArrayBuffer;
 use encoding::types::{EncodingRef, EncoderTrap, DecoderTrap};
 use encoding::label::encoding_from_whatwg_label;
 use chardet::charset2encoding;
+use bincode::deserialize;
 
 use asstosrt_wasm::subtitle;
 use asstosrt_wasm::simplecc::Dict;
@@ -52,9 +54,6 @@ struct Charset (String);
 #[derive(Deserialize, Debug)]
 enum Lines { First, Last, All }
 
-#[derive(Deserialize, Debug)]
-enum ChineseConv { None, S2T, T2S }
-
 #[derive(Deserialize, Debug, Clone, Copy)]
 struct IgnoreCodecErr (bool);
 
@@ -62,7 +61,6 @@ struct IgnoreCodecErr (bool);
 struct Options {
     in_charset: Option<Charset>,
     out_charset: Option<Charset>,
-    chinese_conv: ChineseConv,
     lines: Lines,
     ignore_codec_err: IgnoreCodecErr,
 }
@@ -104,24 +102,25 @@ fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
     encoding_from_whatwg_label(charset2encoding(&result.0))
 }
 
-fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
+fn ass_to_srt(ass: ArrayBuffer, opts: Options,
+              dict: Option<Reference>) -> Value {
     let ass: Vec<u8> = ass.into();
     let in_charset = opts.in_charset.map_or_else(
         || try_js!(detect_charset(&ass), "fail to detect ASS charset"),
         |l| l.into());
     let out_charset = opts.out_charset.map_or(in_charset, |l| l.into());
-    let dict = match opts.chinese_conv {
-        ChineseConv::S2T => Some(Dict::default_s2t()),
-        ChineseConv::T2S => Some(Dict::default_t2s()),
-        ChineseConv::None => None,
-    };
+    let dict: Option<Dict> = dict.map(|bin| {
+        let bin: ArrayBuffer = try_js!(bin.downcast().ok_or("not dict"));
+        let bin: Vec<u8> = bin.into();
+        try_js!(deserialize(&bin), "broken dict", err)
+    });
     let lines = opts.lines;
-    let mapper = move |s: String| {
+    let mapper = |s: String| {
         match lines {
             Lines::First => s.lines().next(),
             Lines::Last => s.lines().last(),
             Lines::All => Some(s.as_str()),
-        }.map(|s| dict.map_or(s.into(), |d| d.replace_all(s)))
+        }.map(|s| dict.as_ref().map_or(s.into(), |d| d.replace_all(s)))
     };
 
     let ass = try_js!(in_charset.decode(&ass,

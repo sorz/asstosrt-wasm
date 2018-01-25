@@ -1,4 +1,18 @@
 use super::Dict;
+use std::fs::File;
+use bincode::{serialize_into, Infinite};
+
+#[test]
+fn build_dict() {
+    let dict = Dict::load(include_str!("t2s.txt"));
+    let mut file = File::create("target/t2s.dict").unwrap();
+    serialize_into(&mut file, &dict, Infinite).unwrap();
+
+    let dict = Dict::load(include_str!("s2t.txt"));
+    let mut file = File::create("target/s2t.dict").unwrap();
+    serialize_into(&mut file, &dict, Infinite).unwrap();
+}
+
 
 #[test]
 fn test_prefix_match() {
@@ -42,7 +56,8 @@ fn test_dict_ts() {
     后悔莫及。人事间最痛苦的事莫过于此。如果上天能够给我一个再来一次得机会，\
     我会对那个女孩子说三个字，我爱你。如果非要在这份爱上加个期限，我希望是，\
     一万年。";
-    assert_eq!(sc, Dict::default_t2s().replace_all(tc));
+    let dict = Dict::load(include_str!("t2s.txt"));
+    assert_eq!(sc, dict.replace_all(tc));
 }
 
 #[test]
@@ -71,6 +86,7 @@ fn test_dict_st() {
     新的理論被發現了。
     鮎魚和鮎魚是一種生物。
     金胄不是金色的甲冑。";
-    assert_eq!(tc, Dict::default_s2t().replace_all(sc));
+    let dict = Dict::load(include_str!("s2t.txt"));
+    assert_eq!(tc, dict.replace_all(sc));
 }
 
