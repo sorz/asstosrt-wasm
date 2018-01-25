@@ -53,7 +53,12 @@ impl DialogueFormat {
 impl<'a> Dialogue<'a> {
     fn cleanse_text(&mut self) {
         lazy_static! {
-            static ref RE_CMD: Regex = Regex::new(r"\{.*?\}").unwrap();
+            static ref RE_CMD: Regex = Regex::new(
+                // remove:
+                // {\pX}...{\p0} or {\pX}... (draw cmd); and
+                // {...} (other cmds}
+                r"\{\\p[1-9]\}.*?(\{\\p0\}|$)|\{.*?\}"
+            ).unwrap();
         }
         self.text = RE_CMD
             .replace_all(&self.text, "")
@@ -133,6 +138,9 @@ pub fn ass_to_srt<F>(ass: &str, no_effect: bool, mut mapper: Option<F>)
     Ok(dialogues.into_iter()
        .filter_map(|mut d| {
            d.cleanse_text();
+           if d.text.is_empty() {
+               return None;
+           }
            if let Some(ref mut f) = mapper {
                d.text = f(d.text.into())?.into();
            }
@@ -141,6 +149,15 @@ pub fn ass_to_srt<F>(ass: &str, no_effect: bool, mut mapper: Option<F>)
        .collect())
 }
 
+#[test]
+fn test_cleanse_text() {
+    let mut d = Dialogue {
+        start: Centisec(0), end: Centisec(0), effect: false,
+        text: r"some{\p1}few{\p2}draw{\p0}{\b0}text{\b1}{\p0}\Nline".into(),
+    };
+    d.cleanse_text();
+    assert_eq!("sometext\r\nline", d.text);
+}
 
 #[test]
 fn test_ass_to_srt() {
@@ -151,12 +168,16 @@ Format: Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 Dialogue: 0:02:42.42,0:02:44.05,main,b,0,0,0,,Something...
 Dialogue: 0:02:40.65,0:02:41.79,main,a,0,0,0,,Hello,\nworld!~
 Dialogue: 0:02:40.65,0:02:41.79,main,a,0,0,0,x,[Effect]
+Dialogue: 0:03:01.00,0:03:02.00,main,a,0,0,0,,{\p1}dr{\p2}aw{\p0}
+Dialogue: 0:04:01.00,0:04:02.00,main,a,0,0,0,,some{\p2}draw with{\p0}text
 "#;
     let srt = "\
 00:02:40,650 --> 00:02:41,790\r\n\
 Hello,\r\nworld!~\r\n\r\n\
 00:02:42,420 --> 00:02:44,050\r\n\
-Something...\r\n\r\n";
+Something...\r\n\r\n\
+00:04:01,000 --> 00:04:02,000\r\n\
+sometext\r\n\r\n";
     let conv = |s| Some(s);
     let result = ass_to_srt(ass, true, Some(conv)).unwrap();
     assert_eq!(result, srt);
