@@ -28,23 +28,8 @@ if( typeof Rust === 'undefined' ) {
 
     const __imports = {
         env: {
-            "__extjs_de942ef9ccd064c41dc92d5b5bf83c61aeb00278": function($0) {
-                Module.STDWEB.increment_refcount( $0 );
-            },
             "__extjs_d8a439451216bbc6cd9f3012f189d2ad6a2e9459": function($0) {
                 Module.STDWEB.decrement_refcount( $0 );
-            },
-            "__extjs_0088e2fb885208bbfc4a92f3ec5c1d71feadeb9d": function($0, $1) {
-                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){console.log (($1))})());
-            },
-            "__extjs_59a7fdff407d920fdf906fe9f19914760fd411a1": function($0, $1) {
-                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){return new Blob ([($1)], {type : "text/srt"})})());
-            },
-            "__extjs_6eae44ebf97fc6fe695ffec931981252d8cce82c": function($0, $1) {
-                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){Module.exports.assToSrt = ($1);})());
-            },
-            "__extjs_40ce095ca5699fdfedc424caf7ad10d722ac834e": function($0, $1) {
-                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){throw ($1)})());
             },
             "__extjs_d0f9580b9cfe82e2ee67d3707e52d87bbabe59f2": function() {
                 Module.STDWEB = {};
@@ -76,6 +61,9 @@ if( typeof Rust === 'undefined' ) {
             "__extjs_20637d8f642203b38c263a5d0f43b9d88ec67c31": function($0, $1, $2) {
                 console.error( 'Panic location:', Module.STDWEB.to_js_string( $0, $1 ) + ':' + $2 );
             },
+            "__extjs_de942ef9ccd064c41dc92d5b5bf83c61aeb00278": function($0) {
+                Module.STDWEB.increment_refcount( $0 );
+            },
             "__extjs_ac7ced275c794bbaa5f758ba4a5c0d89d27a7023": function($0, $1) {
                 var object = Module.STDWEB.acquire_js_reference( $0 );Module.STDWEB.serialize_object( $1, object );
             },
@@ -99,6 +87,18 @@ if( typeof Rust === 'undefined' ) {
             },
             "__extjs_ff2c75b4783fd5c9d8c934bbd4a03e66527e05e4": function($0) {
                 Module.STDWEB.tmp = Module.STDWEB.to_js( $0 );
+            },
+            "__extjs_0088e2fb885208bbfc4a92f3ec5c1d71feadeb9d": function($0, $1) {
+                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){console.log (($1))})());
+            },
+            "__extjs_40ce095ca5699fdfedc424caf7ad10d722ac834e": function($0, $1) {
+                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){throw ($1)})());
+            },
+            "__extjs_59a7fdff407d920fdf906fe9f19914760fd411a1": function($0, $1) {
+                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){return new Blob ([($1)], {type : "text/srt"})})());
+            },
+            "__extjs_6eae44ebf97fc6fe695ffec931981252d8cce82c": function($0, $1) {
+                $1 = Module.STDWEB.to_js($1);Module.STDWEB.from_js($0, (function(){Module.exports.assToSrt = ($1);})());
             },
             "__web_on_grow": function() {
                 const buffer = Module.instance.exports.memory.buffer;
