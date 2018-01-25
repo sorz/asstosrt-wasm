@@ -4,7 +4,7 @@ use super::{Dialogue, Centisec, ass_to_srt};
 fn test_cleanse_text() {
     let mut d = Dialogue {
         start: Centisec(0), end: Centisec(0), effect: false,
-        text: r"some{\p1}few{\p2}draw{\p0}{\b0}text{\b1}{\p0}\Nline".into(),
+        text: r"some{\fad(2,5)\p1\alpha&5}few{\p2}draw{\p0}{\b0\test}text{\b1}{\p0}\Nline".into(),
     };
     d.cleanse_text();
     assert_eq!("sometext\r\nline", d.text);

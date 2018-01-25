@@ -60,7 +60,7 @@ impl<'a> Dialogue<'a> {
                 // remove:
                 // {\pX}...{\p0} or {\pX}... (draw cmd); and
                 // {...} (other cmds}
-                r"\{\\p[1-9]\}.*?(\{\\p0\}|$)|\{.*?\}"
+                r"\{[^\}]*\\p[1-9][^\}]*\}.*?(\{[^\}]*\\p0[^\}]*\}|$)|\{.*?\}"
             ).unwrap();
             static ref RE_LINE: Regex = Regex::new(
                 r"\\[Nn]"
