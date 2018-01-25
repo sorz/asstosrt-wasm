@@ -9,6 +9,13 @@ $("#files").addEventListener("change", async ev => {
   }
 });
 
+$("#conv-dict").addEventListener("change", ev => {
+  worker.postMessage({
+    action: "preloadDict",
+    dict: ev.target.value || null
+  });
+});
+
 async function onDrop(ev) {
   ev.preventDefault();
   let items = ev.dataTransfer.items;
@@ -48,9 +55,9 @@ async function addFile(file) {
     out_charset: $("#out-charset").value || null,
     lines: $("#lines").value,
     ignore_codec_err: $("#ignore-codec-err").checked,
-    conv_dict: $("#conv-dict").value
   };
   worker.postMessage({
+    action: "addFile",
     id: id, file: file, opts: opts
   });
 }
