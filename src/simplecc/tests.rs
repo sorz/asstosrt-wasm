@@ -1,18 +1,5 @@
 use super::Dict;
 use std::fs::File;
-use bincode::{serialize_into, Infinite};
-
-#[test]
-fn build_dict() {
-    let dict = Dict::load(include_str!("t2s.txt"));
-    let mut file = File::create("target/t2s.dict").unwrap();
-    serialize_into(&mut file, &dict, Infinite).unwrap();
-
-    let dict = Dict::load(include_str!("s2t.txt"));
-    let mut file = File::create("target/s2t.dict").unwrap();
-    serialize_into(&mut file, &dict, Infinite).unwrap();
-}
-
 
 #[test]
 fn test_prefix_match() {

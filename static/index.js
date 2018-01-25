@@ -47,11 +47,11 @@ async function addFile(file) {
     in_charset: $("#in-charset").value || null,
     out_charset: $("#out-charset").value || null,
     lines: $("#lines").value,
-    ignore_codec_err: $("#ignore-codec-err").checked
+    ignore_codec_err: $("#ignore-codec-err").checked,
+    conv_dict: $("#conv-dict").value
   };
-  let dict = $("#chinese-conv").value;
   worker.postMessage({
-    id: id, file: file, dict: dict, opts: opts
+    id: id, file: file, opts: opts
   });
 }
 

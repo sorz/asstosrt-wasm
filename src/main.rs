@@ -4,15 +4,13 @@ extern crate stdweb;
 extern crate serde_derive;
 extern crate encoding;
 extern crate chardet;
-extern crate bincode;
 extern crate asstosrt_wasm;
 
-use stdweb::{Value, UnsafeTypedArray, Reference};
+use stdweb::{Value, UnsafeTypedArray};
 use stdweb::web::ArrayBuffer;
 use encoding::types::{EncodingRef, EncoderTrap, DecoderTrap};
 use encoding::label::encoding_from_whatwg_label;
 use chardet::charset2encoding;
-use bincode::deserialize;
 
 use asstosrt_wasm::subtitle;
 use asstosrt_wasm::simplecc::Dict;
@@ -63,6 +61,7 @@ struct Options {
     out_charset: Option<Charset>,
     lines: Lines,
     ignore_codec_err: IgnoreCodecErr,
+    conv_dict: Option<String>,
 }
 js_deserializable!(Options);
 
@@ -102,18 +101,13 @@ fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
     encoding_from_whatwg_label(charset2encoding(&result.0))
 }
 
-fn ass_to_srt(ass: ArrayBuffer, opts: Options,
-              dict: Option<Reference>) -> Value {
+fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
     let ass: Vec<u8> = ass.into();
     let in_charset = opts.in_charset.map_or_else(
         || try_js!(detect_charset(&ass), "fail to detect ASS charset"),
         |l| l.into());
     let out_charset = opts.out_charset.map_or(in_charset, |l| l.into());
-    let dict: Option<Dict> = dict.map(|bin| {
-        let bin: ArrayBuffer = try_js!(bin.downcast().ok_or("not dict"));
-        let bin: Vec<u8> = bin.into();
-        try_js!(deserialize(&bin), "broken dict", err)
-    });
+    let dict: Option<Dict> = opts.conv_dict.map(|s| Dict::load(&s));
     let lines = opts.lines;
     let mapper = |s: String| {
         match lines {

@@ -9,9 +9,9 @@ onmessage = async function(e) {
   let opts = e.data.opts;
   try {
     let wasm = await Rust.asstosrt_wasm;
-    let dict = await fetchChineseConvDict(e.data.dict);
+    opts.conv_dict = await fetchChineseConvDict(opts.conv_dict);
     let ass = reader.readAsArrayBuffer(file);
-    let srt = wasm.assToSrt(ass, opts, dict);
+    let srt = wasm.assToSrt(ass, opts);
     let srtUrl = URL.createObjectURL(srt);
     postMessage({id: id, srtUrl: srtUrl});
   } catch (e) {
@@ -23,6 +23,6 @@ async function fetchChineseConvDict(dict) {
   if (!dict) return null;
   let resp = await fetch(dict);
   if (!resp.ok) throw "fail to download dict: " + resp.status;
-  return await resp.arrayBuffer();
+  return await resp.text();
 }
 
