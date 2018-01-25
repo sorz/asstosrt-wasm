@@ -9,12 +9,12 @@ $("#files").addEventListener("change", async ev => {
   }
 });
 
-$("#conv-dict").addEventListener("change", ev => {
-  worker.postMessage({
-    action: "preloadDict",
-    dict: ev.target.value || null
-  });
+const preloadDict = (d) => worker.postMessage({
+  action: "preloadDict", dict: d,
 });
+preloadDict($("#conv-dict").value);
+$("#conv-dict").addEventListener("change", ev =>
+  preloadDict(ev.target.value));
 
 async function onDrop(ev) {
   ev.preventDefault();
