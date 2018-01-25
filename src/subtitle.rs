@@ -59,12 +59,15 @@ impl<'a> Dialogue<'a> {
                 // {...} (other cmds}
                 r"\{\\p[1-9]\}.*?(\{\\p0\}|$)|\{.*?\}"
             ).unwrap();
+            static ref RE_LINE: Regex = Regex::new(
+                r"\\[Nn]"
+            ).unwrap();
         }
-        self.text = RE_CMD
-            .replace_all(&self.text, "")
-            .replace(r"\n", "\r\n")
-            .replace(r"\N", "\r\n")
-            .into();
+        self.text = {
+            let text = RE_CMD.replace_all(&self.text, "");
+            let text = RE_LINE.replace_all(&text, "\r\n");
+            text.into_owned()
+        }.into();
     }
 
     fn as_srt(&self) -> String {
