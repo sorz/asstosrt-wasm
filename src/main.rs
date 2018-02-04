@@ -4,6 +4,7 @@ extern crate stdweb;
 extern crate serde_derive;
 extern crate encoding;
 extern crate chardet;
+extern crate simplecc;
 extern crate asstosrt_wasm;
 
 use stdweb::{Value, UnsafeTypedArray};
@@ -13,7 +14,7 @@ use encoding::label::encoding_from_whatwg_label;
 use chardet::charset2encoding;
 
 use asstosrt_wasm::subtitle;
-use asstosrt_wasm::simplecc::Dict;
+use simplecc::Dict;
 
 
 macro_rules! throw {
@@ -107,7 +108,7 @@ fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
         || try_js!(detect_charset(&ass), "fail to detect ASS charset"),
         |l| l.into());
     let out_charset = opts.out_charset.map_or(in_charset, |l| l.into());
-    let dict: Option<Dict> = opts.conv_dict.map(|s| Dict::load(&s));
+    let dict: Option<Dict> = opts.conv_dict.map(|s| Dict::load_str(&s));
     let lines = opts.lines;
     let mapper = |s: String| {
         match lines {
