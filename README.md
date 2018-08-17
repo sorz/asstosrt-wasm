@@ -10,6 +10,7 @@ Convert ASS/SSA subtitles to SRT format on browser.
 * Auto detect encoding of input files
 * Customizable output encodings
 * Advanced Traditional/Simplified Chinese convert
+* Download as a zip bundle
 
 ## Acknowledgement
 
