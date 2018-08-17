@@ -32,7 +32,7 @@ async function addFiles(id, files, opts) {
   try {
     opts.conv_dict = await conv_dict;
     let wasm = await Rust.asstosrt_wasm;
-    let names = files.map(f => f.name);
+    let names = files.map(f => renameToSrt(f.name));
     let contents = files.map(f => reader.readAsArrayBuffer(f));
     let zip = wasm.assToSrtBulk(contents, names, opts);
     let url = URL.createObjectURL(zip);
@@ -44,6 +44,12 @@ async function addFiles(id, files, opts) {
 
 function preloadDict(dict) {
   conv_dict = dict ? fetchChineseConvDict(dict) : null;
+}
+
+function renameToSrt(path) {
+  if (path.endsWith('.ass'))
+    path = path.slice(0, -4);
+  return path + ".srt";
 }
 
 async function fetchChineseConvDict(dict) {

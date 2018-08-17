@@ -9,8 +9,10 @@ const VERSION_MADE_BY: &'static [u8] = b"\x00\x3f";  // 6.3
 const GENERAL_PURPOSE_BIT_FLAG: &'static [u8] = b"\x00\x00";
 const COMPRESSION_METHOD_STORE: &'static [u8] = b"\x00\x00";
 const LENGTH_ZERO: &'static [u8] = b"\x00\x00";
-const INTERNAL_FILE_ATTRS: &'static [u8] = b"\x00\x00";
+const INTERNAL_FILE_ATTRS: &'static [u8] = b"\x10\x00"; // text file
 const EXTERNAL_FILE_ATTRS: &'static [u8] = b"\x00\x00\x00\x00";
+const UNICODE_PATH_EXTRA_FIELD: &'static [u8] = b"\x75\x70";
+const UNICODE_PATH_VERSION: &'static [u8] = b"\x01";
 
 
 pub struct ZipWriter<W> {
@@ -30,6 +32,30 @@ struct FileEntry {
 enum FileHeader {
     Local,
     Central,
+}
+
+struct Utf8PathField<'a> {
+    path: &'a str,
+}
+
+impl<'a> Utf8PathField<'a> {
+    fn new(path: &'a str) -> Self {
+        Utf8PathField { path }
+    }
+
+    fn into_bytes(self) -> Box<[u8]> {
+        let mut buf = Vec::with_capacity(self.path.len() + 9);
+        buf.write(UNICODE_PATH_EXTRA_FIELD).unwrap();
+        buf.write(&((self.path.len() + 5) as u16).to_le().to_bytes()).unwrap();
+        buf.write(UNICODE_PATH_VERSION).unwrap();
+
+        let mut digest = crc32::Digest::new(crc32::IEEE);
+        digest.write(self.path.as_bytes());
+        buf.write(&digest.sum32().to_le().to_bytes()).unwrap();
+
+        buf.write(self.path.as_bytes()).unwrap();
+        buf.into_boxed_slice()
+    }
 }
 
 impl FileHeader {
@@ -62,7 +88,8 @@ impl FileEntry {
         n += write.write(&size_bytes)?;
         n += write.write(&size_bytes)?;
         n += write.write(&(self.filename.len() as u16).to_le().to_bytes())?;
-        n += write.write(LENGTH_ZERO)?; // extra field
+        let extra = Utf8PathField::new(&self.filename).into_bytes();
+        n += write.write(&(extra.len() as u16).to_le().to_bytes())?;
         if header == FileHeader::Central {
             n += write.write(LENGTH_ZERO)?; // file comment
             n += write.write(LENGTH_ZERO)?; // disk number
@@ -71,6 +98,7 @@ impl FileEntry {
             n += write.write(&(self.offset as u32).to_le().to_bytes())?;
         }        
         n += write.write(self.filename.as_bytes())?;
+        n += write.write(&extra)?;
         Ok(n)
     }
 }
