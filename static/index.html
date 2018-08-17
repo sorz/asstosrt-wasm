@@ -16,6 +16,7 @@
     <form ondrop="onDrop(event);" ondragover="onDropOver(event);"
         ondragend="onDropEnd(event);">
       <h2>Settings</h2>
+      <details><summary>Show encodings, lines, zip, etc.</summary>
       <p><label for="in-charset">ASS Encoding</label>
         <input type="text" id="in-charset" list="charsets"
           placeholder="auto detect"></p>
@@ -38,9 +39,12 @@
         </select>
       <p><label for="no-zip">Don't archive files into single zip</label>
         <input type="checkbox" id="no-zip"></p>
-      <h2>Input Files</h2>
+      </details>
+
+      <h2>Drop ASS/SSA Files</h2>
       <p>Drag &amp; drop to here; or
       <input type="file" id="files" multiple>
+      <p>Select/drop multiple files at once for bulk processing.</p>
 
       <datalist id="charsets">
         <option label="Unicode (UTF-8)" value="utf-8">
@@ -51,7 +55,7 @@
       </datalist>
     </form>
 
-    <h2>Results</h2>
+    <h2>Save SRT Files</h2>
     <ul id="list">
     </ul>
     <template id="file">
