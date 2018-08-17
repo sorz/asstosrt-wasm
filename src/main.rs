@@ -7,15 +7,16 @@ extern crate chardet;
 extern crate simplecc;
 extern crate asstosrt_wasm;
 
+use std::io::Cursor;
 use stdweb::{Value, UnsafeTypedArray};
 use stdweb::web::ArrayBuffer;
 use encoding::types::{EncodingRef, EncoderTrap, DecoderTrap};
 use encoding::label::encoding_from_whatwg_label;
 use chardet::charset2encoding;
-
-use asstosrt_wasm::subtitle;
 use simplecc::Dict;
 
+use asstosrt_wasm::subtitle;
+use asstosrt_wasm::zip::ZipWriter;
 
 macro_rules! throw {
     ( $e:expr ) => {
@@ -47,16 +48,16 @@ macro_rules! try_js {
     };
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct Charset (String);
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 enum Lines { First, Last, All }
 
 #[derive(Deserialize, Debug, Clone, Copy)]
 struct IgnoreCodecErr (bool);
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct Options {
     in_charset: Option<Charset>,
     out_charset: Option<Charset>,
@@ -102,7 +103,7 @@ fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
     encoding_from_whatwg_label(charset2encoding(&result.0))
 }
 
-fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
+fn convert(ass: ArrayBuffer, opts: Options) -> Box<[u8]> {
     let ass: Vec<u8> = ass.into();
     let in_charset = opts.in_charset.map_or_else(
         || try_js!(detect_charset(&ass), "fail to detect ASS charset"),
@@ -131,13 +132,34 @@ fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
 
     try_js!(out_charset.encode_to(&srt,
         opts.ignore_codec_err.into(), &mut output), "fail to encode", err);
+    output.into_boxed_slice()
+}
+
+fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
+    let output = convert(ass, opts);
     let output = unsafe { UnsafeTypedArray::new(&output) };
     js! (return new Blob([@{output}], {type: "text/srt"}))
+}
+
+fn ass_to_srt_bulk(files: Vec<ArrayBuffer>,
+                   filenames: Vec<String>,
+                   opts: Options) -> Value {
+    let mut buf = Cursor::new(Vec::new());
+    {
+        let mut zip = ZipWriter::new(&mut buf);
+        filenames.into_iter().zip(
+            files.into_iter().map(|f| convert(f, opts.clone()))
+        ).for_each(|(fname, f)| try_js!(zip.write_file(&fname, &f[..])));
+        try_js!(zip.close());
+    }
+    let output = unsafe { UnsafeTypedArray::new(buf.get_ref()) };
+    js! (return new Blob([@{output}], {type: "application/zip"}))
 }
 
 fn main() {
     stdweb::initialize();
     js! {
         Module.exports.assToSrt = @{ass_to_srt};
+        Module.exports.assToSrtBulk = @{ass_to_srt_bulk};
     }
 }
