@@ -7,7 +7,7 @@ $("#files").addEventListener("change", async ev => {
   for (let i = 0; i < ev.target.files.length; i++) {
     files.push(ev.target.files.item(i));
   }
-  await addFiles(files);
+  submit(files);
 });
 
 const preloadDict = (d) => worker.postMessage({
@@ -17,12 +17,12 @@ preloadDict($("#conv-dict").value);
 $("#conv-dict").addEventListener("change", ev =>
   preloadDict(ev.target.value));
 
-async function onDrop(ev) {
+function onDrop(ev) {
   ev.preventDefault();
   let items = ev.dataTransfer.items
     .filter(i => i.kind == "file")
     .map(f => f.getAsFile());
-  await addFiles(items);
+  submit(items);
 };
 
 function onDropOver(ev) {
@@ -33,7 +33,14 @@ function onDropEnd(ev) {
   ev.dataTransfer.clearData();
 }
 
-async function addFiles(files) {
+function submit(files) {
+  if ($("#no-zip").checked)
+    files.forEach(f => addFiles([f]));
+  else
+    addFiles(files);
+}
+
+function addFiles(files) {
   let id = nextId++;
   let template = document.querySelector("#file");
   let content = document.importNode(template, true).content;
