@@ -23,10 +23,13 @@ Dialogue: 0:03:01.00,0:03:02.00,main,a,0,0,0,,{\p1}dr{\p2}aw{\p0}
 Dialogue: 0:04:01.00,0:04:02.00,main,a,0,0,0,,some{\p2}draw with{\p0}text
 "#;
     let srt = "\
+1\r\n\
 00:02:40,650 --> 00:02:41,790\r\n\
 Hello,\r\nworld!~\r\n\r\n\
+2\r\n\
 00:02:42,420 --> 00:02:44,050\r\n\
 Something...\r\n\r\n\
+3\r\n\
 00:04:01,000 --> 00:04:02,000\r\n\
 sometext\r\n\r\n";
     let conv = |s| Some(s);

@@ -73,8 +73,9 @@ impl<'a> Dialogue<'a> {
         }.into();
     }
 
-    fn as_srt(&self) -> String {
-        format!("{} --> {}\r\n{}\r\n\r\n", self.start, self.end, self.text)
+    fn as_srt(&self, id: usize) -> String {
+        format!("{}\r\n{} --> {}\r\n{}\r\n\r\n",
+                id, self.start, self.end, self.text)
     }
 }
 
@@ -141,6 +142,7 @@ pub fn ass_to_srt<F>(ass: &str, no_effect: bool, mut mapper: Option<F>)
         .collect::<Vec<_>>();
     // to srt
     dialogues.sort();
+    let mut id = 0;
     Ok(dialogues.into_iter()
        .filter_map(|mut d| {
            d.cleanse_text();
@@ -151,7 +153,10 @@ pub fn ass_to_srt<F>(ass: &str, no_effect: bool, mut mapper: Option<F>)
                d.text = f(d.text.into())?.into();
            }
            Some(d)
-       }).map(|d| d.as_srt())
+       }).map(|d| {
+           id += 1;
+           d.as_srt(id)
+       })
        .collect())
 }
 
