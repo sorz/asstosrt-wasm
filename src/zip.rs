@@ -46,12 +46,12 @@ impl<'a> Utf8PathField<'a> {
     fn into_bytes(self) -> Box<[u8]> {
         let mut buf = Vec::with_capacity(self.path.len() + 9);
         buf.write(UNICODE_PATH_EXTRA_FIELD).unwrap();
-        buf.write(&((self.path.len() + 5) as u16).to_le().to_bytes()).unwrap();
+        buf.write(&((self.path.len() + 5) as u16).to_le_bytes()).unwrap();
         buf.write(UNICODE_PATH_VERSION).unwrap();
 
         let mut digest = crc32::Digest::new(crc32::IEEE);
         digest.write(self.path.as_bytes());
-        buf.write(&digest.sum32().to_le().to_bytes()).unwrap();
+        buf.write(&digest.sum32().to_le_bytes()).unwrap();
 
         buf.write(self.path.as_bytes()).unwrap();
         buf.into_boxed_slice()
@@ -83,19 +83,19 @@ impl FileEntry {
         n += write.write(GENERAL_PURPOSE_BIT_FLAG)?;
         n += write.write(COMPRESSION_METHOD_STORE)?;
         n += write.write(b"\x00\x00\x00\x00")?; // time & date 
-        n += write.write(&self.crc32.to_le().to_bytes())?;
-        let size_bytes = (self.size as u32).to_le().to_bytes();
+        n += write.write(&self.crc32.to_le_bytes())?;
+        let size_bytes = (self.size as u32).to_le_bytes();
         n += write.write(&size_bytes)?;
         n += write.write(&size_bytes)?;
-        n += write.write(&(self.filename.len() as u16).to_le().to_bytes())?;
+        n += write.write(&(self.filename.len() as u16).to_le_bytes())?;
         let extra = Utf8PathField::new(&self.filename).into_bytes();
-        n += write.write(&(extra.len() as u16).to_le().to_bytes())?;
+        n += write.write(&(extra.len() as u16).to_le_bytes())?;
         if header == FileHeader::Central {
             n += write.write(LENGTH_ZERO)?; // file comment
             n += write.write(LENGTH_ZERO)?; // disk number
             n += write.write(INTERNAL_FILE_ATTRS)?;
             n += write.write(EXTERNAL_FILE_ATTRS)?;
-            n += write.write(&(self.offset as u32).to_le().to_bytes())?;
+            n += write.write(&(self.offset as u32).to_le_bytes())?;
         }        
         n += write.write(self.filename.as_bytes())?;
         n += write.write(&extra)?;
@@ -140,7 +140,7 @@ where W: Write + Seek {
     pub fn close(self) -> io::Result<()> {
         let ZipWriter { mut writer, files, cursor } = self;
 
-        let entries_len = (files.len().to_le() as u16).to_le().to_bytes();
+        let entries_len = (files.len().to_le() as u16).to_le_bytes();
         let mut len = 0;
         for file in files {
             len += file.write_header(&mut writer, FileHeader::Central)?;
@@ -148,11 +148,11 @@ where W: Write + Seek {
 
         writer.write(EOF_CENTRAL_FILE_HEADER_SIGNATURE)?;
         writer.write(LENGTH_ZERO)?;  // number of this disk
-        writer.write(&1u16.to_le().to_bytes())?;  // disk w/ central dir
+        writer.write(&1u16.to_le_bytes())?;  // disk w/ central dir
         writer.write(&entries_len)?;  // in the central dir on this disk
         writer.write(&entries_len)?;  // total in the central dir
-        writer.write(&(len as u32).to_le().to_bytes())?;
-        writer.write(&(cursor as u32).to_le().to_bytes())?;
+        writer.write(&(len as u32).to_le_bytes())?;
+        writer.write(&(cursor as u32).to_le_bytes())?;
         writer.write(LENGTH_ZERO)?;  // zip file comment
         Ok(())
     }
