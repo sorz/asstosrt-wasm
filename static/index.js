@@ -10,6 +10,11 @@ $("#files").addEventListener("change", async ev => {
   submit(files);
 });
 
+$("#like").addEventListener("click", function(ev) {
+  this.classList.add('liked');
+  this.title = "Thanks!";
+});
+
 const preloadDict = (d) => worker.postMessage({
   action: "preloadDict", dict: d,
 });
@@ -99,6 +104,7 @@ function onConvertDone(id, url) {
   content.querySelector(".close").addEventListener("click", event => {
     URL.revokeObjectURL(url);
   });
+  $('#vote').style.display = 'block';
 }
 
 worker.onmessage = function(e) {
