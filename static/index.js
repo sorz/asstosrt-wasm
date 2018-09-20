@@ -46,8 +46,12 @@ function addFiles(files) {
   let content = document.importNode(template, true).content;
   content.querySelector(".file").id = `file-${id}`;
   if (files.length == 1) {
-    content.querySelector(".name").textContent = files[0].name;
-    content.querySelector(".save").download = `${files[0].name}.srt`;
+    let name = files[0].name;
+    if (name.match(/\.(ass|ssa)$/) != null)
+      name = name.slice(0, -4);
+    name += '.srt'
+    content.querySelector(".name").textContent = name;
+    content.querySelector(".save").download = name;
   } else {
     content.querySelector(".name").textContent =
       `${files.length} subtitle files`;
