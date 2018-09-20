@@ -23,3 +23,6 @@ footer a { color: lightgray; }
 #list > li.progress .status::before { content: "converting…"; }
 #list > li.done .save { display: inline; }
 #list > li.error .status { color: lightcoral; }
+
+#vote a { color: gray; font-weight: bold; text-decoration: none; }
+#vote a.liked .heart { fill: red; }
