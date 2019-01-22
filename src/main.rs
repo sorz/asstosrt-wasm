@@ -1,22 +1,22 @@
-#[macro_use]
-extern crate stdweb;
-#[macro_use]
-extern crate serde_derive;
-extern crate encoding;
-extern crate chardet;
-extern crate simplecc;
-extern crate asstosrt_wasm;
-
+#[macro_use] extern crate stdweb;
 use std::io::Cursor;
-use stdweb::{Value, UnsafeTypedArray};
-use stdweb::web::ArrayBuffer;
-use encoding::types::{EncodingRef, EncoderTrap, DecoderTrap};
-use encoding::label::encoding_from_whatwg_label;
+use stdweb::{
+    Value,
+    UnsafeTypedArray,
+    web::ArrayBuffer,
+};
+use serde::Deserialize;
+use encoding::{
+    types::{EncodingRef, EncoderTrap, DecoderTrap},
+    label::encoding_from_whatwg_label,
+};
 use chardet::charset2encoding;
 use simplecc::Dict;
 
-use asstosrt_wasm::subtitle;
-use asstosrt_wasm::zip::ZipWriter;
+use asstosrt_wasm::{
+    subtitle,
+    zip::ZipWriter,
+};
 
 macro_rules! throw {
     ( $e:expr ) => {

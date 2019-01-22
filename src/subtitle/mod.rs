@@ -1,9 +1,12 @@
-use std::collections::HashMap;
-use std::cmp::Ordering;
-use std::borrow::Cow;
-use std::str::FromStr;
-use std::fmt;
+use std::{
+    collections::HashMap,
+    cmp::Ordering,
+    borrow::Cow,
+    str::FromStr,
+    fmt,
+};
 use regex::Regex;
+use lazy_static::lazy_static;
 
 #[cfg(test)]
 mod tests;
