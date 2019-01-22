@@ -18,7 +18,7 @@ dependencies = [
  "serde 1.0.85 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.85 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.36 (registry+https://github.com/rust-lang/crates.io-index)",
- "simplecc 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "simplecc 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "stdweb 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -233,7 +233,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "simplecc"
-version = "0.1.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -346,7 +346,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum serde_derive 1.0.85 (registry+https://github.com/rust-lang/crates.io-index)" = "a915306b0f1ac5607797697148c223bedeaa36bcc2e28a01441cd638cc6567b4"
 "checksum serde_json 1.0.36 (registry+https://github.com/rust-lang/crates.io-index)" = "574378d957d6dcdf1bbb5d562a15cbd5e644159432f84634b94e485267abbcc7"
 "checksum sha1 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
-"checksum simplecc 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "340ca1e640ce889de72dd472cb26ae10c4ffa8d71c8002af22efc858fd9c5ca1"
+"checksum simplecc 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "01247c328b6b97673f06d5515a5e6a4e85336d29535d05059280626cf9f14fa2"
 "checksum stdweb 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)" = "461e7f2e33670b1c33f1ea22bb2f86de6136fabd0c4d27d167ed425c231143ca"
 "checksum stdweb-derive 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0e21ebd9179de08f2300a65454268a17ea3de204627458588c84319c4def3930"
 "checksum stdweb-internal-macros 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "432465093692af7379dcd196ce4be398c906958d91b412fff9102a66238d6f26"

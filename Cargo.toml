@@ -13,5 +13,5 @@ chardet = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_derive = "1.0"
 serde_json = "1.0"
-simplecc = "0.1"
+simplecc = "0.2"
 crc = "1.8.1"
