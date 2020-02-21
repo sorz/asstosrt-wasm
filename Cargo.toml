@@ -5,9 +5,9 @@ authors = ["sorz <orz@sorz.org>"]
 edition = "2018"
 
 [dependencies]
-stdweb = "0.4.12"
-regex = "1.0"
-lazy_static = "1.1"
+stdweb = "0.4.20"
+regex = "1.3"
+lazy_static = "1.4"
 encoding = "0.2"
 chardet = "0.2"
 serde = { version = "1.0", features = ["derive"] }
