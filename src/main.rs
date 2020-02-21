@@ -1,22 +1,16 @@
-#[macro_use] extern crate stdweb;
-use std::io::Cursor;
-use stdweb::{
-    Value,
-    UnsafeTypedArray,
-    web::ArrayBuffer,
+#[macro_use]
+extern crate stdweb;
+use chardet::charset2encoding;
+use encoding::{
+    label::encoding_from_whatwg_label,
+    types::{DecoderTrap, EncoderTrap, EncodingRef},
 };
 use serde::Deserialize;
-use encoding::{
-    types::{EncodingRef, EncoderTrap, DecoderTrap},
-    label::encoding_from_whatwg_label,
-};
-use chardet::charset2encoding;
 use simplecc::Dict;
+use std::io::Cursor;
+use stdweb::{web::ArrayBuffer, UnsafeTypedArray, Value};
 
-use asstosrt_wasm::{
-    subtitle,
-    zip::ZipWriter,
-};
+use asstosrt_wasm::{subtitle, zip::ZipWriter};
 
 macro_rules! throw {
     ( $e:expr ) => {
@@ -49,13 +43,17 @@ macro_rules! try_js {
 }
 
 #[derive(Deserialize, Debug, Clone)]
-struct Charset (String);
+struct Charset(String);
 
 #[derive(Deserialize, Debug, Clone)]
-enum Lines { First, Last, All }
+enum Lines {
+    First,
+    Last,
+    All,
+}
 
 #[derive(Deserialize, Debug, Clone, Copy)]
-struct IgnoreCodecErr (bool);
+struct IgnoreCodecErr(bool);
 
 #[derive(Deserialize, Debug, Clone)]
 struct Options {
@@ -93,7 +91,6 @@ impl Into<DecoderTrap> for IgnoreCodecErr {
     }
 }
 
-
 fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
     if s.len() > 4096 {
         s = &s[..4096];
@@ -107,7 +104,8 @@ fn convert(ass: ArrayBuffer, opts: Options) -> Box<[u8]> {
     let ass: Vec<u8> = ass.into();
     let in_charset = opts.in_charset.map_or_else(
         || try_js!(detect_charset(&ass), "fail to detect ASS charset"),
-        |l| l.into());
+        |l| l.into(),
+    );
     let out_charset = opts.out_charset.map_or(in_charset, |l| l.into());
     let dict: Option<Dict> = opts.conv_dict.map(|s| Dict::load_str(&s));
     let lines = opts.lines;
@@ -116,22 +114,31 @@ fn convert(ass: ArrayBuffer, opts: Options) -> Box<[u8]> {
             Lines::First => s.lines().next(),
             Lines::Last => s.lines().last(),
             Lines::All => Some(s.as_str()),
-        }.map(|s| dict.as_ref().map_or(s.into(), |d| d.replace_all(s)))
+        }
+        .map(|s| dict.as_ref().map_or(s.into(), |d| d.replace_all(s)))
     };
 
-    let ass = try_js!(in_charset.decode(&ass,
-            opts.ignore_codec_err.into()), "fail to decode", err);
+    let ass = try_js!(
+        in_charset.decode(&ass, opts.ignore_codec_err.into()),
+        "fail to decode",
+        err
+    );
     let srt = try_js!(subtitle::ass_to_srt(&ass, true, Some(mapper)));
 
     let mut output = Vec::new();
     // insert BOM for utf-16
-    if out_charset.whatwg_name().map_or(false, |n| n.starts_with("utf-16")) {
-        try_js!(out_charset.encode_to(
-            "\u{feff}", EncoderTrap::Strict, &mut output));
+    if out_charset
+        .whatwg_name()
+        .map_or(false, |n| n.starts_with("utf-16"))
+    {
+        try_js!(out_charset.encode_to("\u{feff}", EncoderTrap::Strict, &mut output));
     }
 
-    try_js!(out_charset.encode_to(&srt,
-        opts.ignore_codec_err.into(), &mut output), "fail to encode", err);
+    try_js!(
+        out_charset.encode_to(&srt, opts.ignore_codec_err.into(), &mut output),
+        "fail to encode",
+        err
+    );
     output.into_boxed_slice()
 }
 
@@ -141,15 +148,14 @@ fn ass_to_srt(ass: ArrayBuffer, opts: Options) -> Value {
     js! (return new Blob([@{output}], {type: "text/srt"}))
 }
 
-fn ass_to_srt_bulk(files: Vec<ArrayBuffer>,
-                   filenames: Vec<String>,
-                   opts: Options) -> Value {
+fn ass_to_srt_bulk(files: Vec<ArrayBuffer>, filenames: Vec<String>, opts: Options) -> Value {
     let mut buf = Cursor::new(Vec::new());
     {
         let mut zip = ZipWriter::new(&mut buf);
-        filenames.into_iter().zip(
-            files.into_iter().map(|f| convert(f, opts.clone()))
-        ).for_each(|(fname, f)| try_js!(zip.write_file(&fname, &f[..])));
+        filenames
+            .into_iter()
+            .zip(files.into_iter().map(|f| convert(f, opts.clone())))
+            .for_each(|(fname, f)| try_js!(zip.write_file(&fname, &f[..])));
         try_js!(zip.close());
     }
     let output = unsafe { UnsafeTypedArray::new(buf.get_ref()) };

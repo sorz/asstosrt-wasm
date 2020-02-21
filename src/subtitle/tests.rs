@@ -1,9 +1,11 @@
-use super::{Dialogue, Centisec, ass_to_srt};
+use super::{ass_to_srt, Centisec, Dialogue};
 
 #[test]
 fn test_cleanse_text() {
     let mut d = Dialogue {
-        start: Centisec(0), end: Centisec(0), effect: false,
+        start: Centisec(0),
+        end: Centisec(0),
+        effect: false,
         text: r"some{\fad(2,5)\p1\alpha&5}few{\p2}draw{\p0}{\b0\test}text{\b1}{\p0}\Nline".into(),
     };
     d.cleanse_text();
@@ -36,4 +38,3 @@ sometext\r\n\r\n";
     let result = ass_to_srt(ass, true, Some(conv)).unwrap();
     assert_eq!(result, srt);
 }
-
