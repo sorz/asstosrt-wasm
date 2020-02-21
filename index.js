@@ -77,6 +77,7 @@ function addFiles(files) {
     out_charset: $("#out-charset").value || null,
     lines: $("#lines").value,
     ignore_codec_err: $("#ignore-codec-err").checked,
+    offset_secs: parseFloat($("#offset").value) || 0,
   };
   let cmd = { id: id, opts: opts };
   if (files.length == 1) {
