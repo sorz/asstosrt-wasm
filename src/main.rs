@@ -62,6 +62,7 @@ struct Options {
     lines: Lines,
     ignore_codec_err: IgnoreCodecErr,
     conv_dict: Option<String>,
+    offset_secs: f32,
 }
 js_deserializable!(Options);
 
@@ -123,7 +124,12 @@ fn convert(ass: ArrayBuffer, opts: Options) -> Box<[u8]> {
         "fail to decode",
         err
     );
-    let srt = try_js!(subtitle::ass_to_srt(&ass, true, Some(mapper)));
+    let srt = try_js!(subtitle::ass_to_srt(
+        &ass,
+        true,
+        Some(mapper),
+        opts.offset_secs
+    ));
 
     let mut output = Vec::new();
     // insert BOM for utf-16

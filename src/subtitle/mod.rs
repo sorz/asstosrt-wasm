@@ -123,10 +123,18 @@ impl fmt::Display for Centisec {
     }
 }
 
+impl Centisec {
+    fn add_secs(&mut self, secs: f32) {
+        let secs = self.0 as f32 + (secs * 100.0);
+        self.0 = if secs <= 0.0 { 0 } else { secs.round() as u32 }
+    }
+}
+
 pub fn ass_to_srt<F>(
     ass: &str,
     no_effect: bool,
     mut mapper: Option<F>,
+    offset_secs: f32,
 ) -> Result<String, &'static str>
 where
     F: FnMut(String) -> Option<String>,
@@ -160,11 +168,14 @@ where
             if d.text.is_empty() {
                 return None;
             }
+            d.start.add_secs(offset_secs);
+            d.end.add_secs(offset_secs);
             if let Some(ref mut f) = mapper {
                 d.text = f(d.text.into())?.into();
             }
             Some(d)
         })
+        .filter(|d| d.end.0 > d.start.0)
         .map(|d| {
             id += 1;
             d.as_srt(id)
