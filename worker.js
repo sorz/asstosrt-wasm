@@ -1,5 +1,5 @@
 window = 'fix stdweb';
-importScripts('js/app.js');
+importScripts('asstosrt_wasm.js');
 
 let reader = new FileReaderSync();
 let conv_dict = null;
