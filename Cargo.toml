@@ -1,17 +1,19 @@
 [package]
 name = "asstosrt_wasm"
-version = "0.1.0"
-authors = ["sorz <orz@sorz.org>"]
+version = "0.2.0"
+authors = ["Shell Chen <me@sorz.org>"]
 edition = "2018"
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
-stdweb = "0.4.20"
+yew = "0.17"
+web-sys = "0.3"
+wasm-bindgen = "0.2"
 regex = "1.3"
 lazy_static = "1.4"
 encoding = "0.2"
 chardet = "0.2"
-serde = { version = "1.0", features = ["derive"] }
-serde_derive = "1.0"
-serde_json = "1.0"
 simplecc = "0.2"
 crc = "1.8.1"
