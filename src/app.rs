@@ -1,19 +1,30 @@
+use crate::drag::DragDropComponent;
+use web_sys::File;
 use yew::prelude::*;
 
-pub struct App {}
+pub struct App {
+    link: ComponentLink<Self>,
+}
 
-pub enum Msg {}
+pub enum Msg {
+    GotFiles(Vec<File>),
+}
 
 impl Component for App {
     type Message = Msg;
     type Properties = ();
 
-    fn create(_: Self::Properties, _: ComponentLink<Self>) -> Self {
-        App {}
+    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+        App { link }
     }
 
-    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
-        true
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        match msg {
+            Msg::GotFiles(files) => {
+                log::debug!("got {} files", files.len());
+            }
+        }
+        false
     }
 
     fn change(&mut self, _: Self::Properties) -> ShouldRender {
@@ -39,6 +50,25 @@ impl Component for App {
                     </a>
                     { " if you have problem with it. "}
                 </p>
+
+                <DragDropComponent on_drop=self.link.callback(|files| Msg::GotFiles(files))>
+                    { "TODO: Settings and so on" }
+                </DragDropComponent>
+
+                <footer>
+                    <p>{ "Your file would NOT be uploaded to anywhere." }</p>
+                    <p>{ "Powered by " }
+                        <a href="https://www.rust-lang.org/" title="The Rust Programming Language">
+                            { "Rust" }
+                        </a>
+                        { " and a set of lovely open-source projects." }
+                    </p>
+                    <p>
+                        { "Source code is avaiable on " }
+                        <a href="https://github.com/sorz/asstosrt-wasm">{ "GitHub" }</a>
+                        { "."}
+                    </p>
+                </footer>
             </>
         }
     }

@@ -9,11 +9,22 @@ crate-type = ["cdylib"]
 
 [dependencies]
 yew = "0.17"
-web-sys = "0.3"
 wasm-bindgen = "0.2"
-regex = "1.3"
+wasm-logger = "0.2.0"
+regex = "1.4"
 lazy_static = "1.4"
 encoding = "0.2"
 chardet = "0.2"
 simplecc = "0.2"
 crc = "1.8.1"
+log = "0.4"
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+    "DragEvent",
+    "DataTransfer",
+    "DataTransferItem",
+    "DataTransferItemList",
+    "File",
+]
