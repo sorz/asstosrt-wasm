@@ -1,7 +1,7 @@
 body { margin: 1em 3em; }
 h1 { color: gray; font-size: 1.8em; margin-top: 1.2em; }
 h2 { color: darkslategrey; font-size: 1.2em; margin-top: 1.5em; }
-form label { display: inline-block; width: 7em; }
+form label { display: inline-block; width: 7em; margin-right: 0.5em; }
 label[for=ignore-codec-err],
 label[for=no-zip] { width: 15em; }
 footer { margin-top: 3em; color: lightgray; font-size: 0.8em; }

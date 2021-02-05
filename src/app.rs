@@ -1,4 +1,6 @@
 use crate::drag::DragDropComponent;
+use crate::form::FormComponent;
+
 use web_sys::File;
 use yew::prelude::*;
 
@@ -52,7 +54,7 @@ impl Component for App {
                 </p>
 
                 <DragDropComponent on_drop=self.link.callback(|files| Msg::GotFiles(files))>
-                    { "TODO: Settings and so on" }
+                    <FormComponent />
                 </DragDropComponent>
 
                 <footer>

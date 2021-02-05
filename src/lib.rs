@@ -1,6 +1,7 @@
-#![recursion_limit = "256"]
+#![recursion_limit = "1024"]
 mod app;
 mod drag;
+mod form;
 
 use wasm_bindgen::prelude::*;
 
