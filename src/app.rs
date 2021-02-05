@@ -54,7 +54,7 @@ impl Component for App {
                 </p>
 
                 <DragDropComponent on_drop=self.link.callback(|files| Msg::GotFiles(files))>
-                    <FormComponent />
+                    <FormComponent on_files=self.link.callback(|files| Msg::GotFiles(files)) />
                 </DragDropComponent>
 
                 <footer>

@@ -1,22 +1,52 @@
+use web_sys::File;
 use yew::prelude::*;
 
-pub struct FormComponent {}
+pub struct FormComponent {
+    files_on_change: Callback<ChangeData>,
+    props: FormProps,
+}
 
-pub enum FormMsg {}
+pub enum FormMsg {
+    Files(Vec<File>),
+}
+
+#[derive(Properties, Clone, PartialEq)]
+pub struct FormProps {
+    pub on_files: Callback<Vec<File>>,
+}
 
 impl Component for FormComponent {
     type Message = FormMsg;
-    type Properties = ();
+    type Properties = FormProps;
 
-    fn create(_props: Self::Properties, _link: ComponentLink<Self>) -> Self {
-        FormComponent {}
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
+        FormComponent {
+            props,
+            files_on_change: link.callback(|event: ChangeData| {
+                let mut files = Vec::new();
+                if let ChangeData::Files(list) = event {
+                    for i in 0..list.length() {
+                        if let Some(file) = list.get(i) {
+                            files.push(file);
+                        }
+                    }
+                }
+                Self::Message::Files(files)
+            }),
+        }
     }
 
-    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        if let Self::Message::Files(files) = msg {
+            if !files.is_empty() {
+                self.props.on_files.emit(files);
+            }
+        }
         false
     }
 
-    fn change(&mut self, _props: Self::Properties) -> ShouldRender {
+    fn change(&mut self, props: Self::Properties) -> ShouldRender {
+        self.props = props;
         false
     }
 
@@ -67,7 +97,7 @@ impl Component for FormComponent {
                 <h2>{ "Drop ASS/SSA Files" }</h2>
                 <p>
                     { "Drag & drop to here; or " }
-                    <input type="file" id="files" multiple=true />
+                    <input type="file" id="files" multiple=true onchange=&self.files_on_change />
                 </p>
                 <p>
                     { "Select/drop multiple files at once for bulk processing." }
