@@ -24,7 +24,7 @@ $("#conv-dict").addEventListener("change", ev =>
 
 function onDrop(ev) {
   ev.preventDefault();
-  let items = ev.dataTransfer.items
+  let items = [...ev.dataTransfer.items]
     .filter(i => i.kind == "file")
     .map(f => f.getAsFile());
   submit(items);
