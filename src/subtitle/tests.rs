@@ -35,6 +35,6 @@ Something...\r\n\r\n\
 00:04:01,000 --> 00:04:02,000\r\n\
 sometext\r\n\r\n";
     let conv = |s| Some(s);
-    let result = ass_to_srt(ass, true, Some(conv)).unwrap();
+    let result = ass_to_srt(ass, true, Some(conv), 1f32).unwrap();
     assert_eq!(result, srt);
 }

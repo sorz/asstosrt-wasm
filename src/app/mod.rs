@@ -1,6 +1,8 @@
-use crate::drag::DragDropComponent;
-use crate::form::FormComponent;
+mod drag;
+mod form;
 
+use self::drag::DragDropComponent;
+use self::form::FormComponent;
 use js_sys::Array;
 use web_sys::{window, Blob, BlobPropertyBag, File, Url, Worker};
 use yew::prelude::*;
