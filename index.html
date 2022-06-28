@@ -3,7 +3,14 @@
   <head>
     <meta charset="utf-8">
     <title>ASS/SSA to SRT Subtitles Converter</title>
-    <link href="index.css" rel="stylesheet">
+    <link data-trunk rel="rust" data-bin="app" data-type="main" />
+    <link data-trunk rel="rust" data-bin="worker" data-type="worker" />
+    <link data-trunk rel="css" href="static/index.css">
+    <link data-trunk rel="copy-file" href="static/s2t.txt">
+    <link data-trunk rel="copy-file" href="static/t2s.txt">
   </head>
   <body></body>
+  <script>
+    let worker = new Worker("worker.js");
+  </script>
 </html>

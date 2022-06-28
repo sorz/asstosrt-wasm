@@ -1,11 +1,45 @@
 use crate::drag::DragDropComponent;
 use crate::form::FormComponent;
 
-use web_sys::File;
+use js_sys::Array;
+use web_sys::{window, Blob, BlobPropertyBag, File, Url, Worker};
 use yew::prelude::*;
+
+fn load_worker() -> Worker {
+    let origin = window()
+        .expect("missing `window`")
+        .location()
+        .origin()
+        .expect("missing `location.origin`");
+
+    let script = Array::new();
+    script.push(
+        &format!(
+            r#"
+            importScripts("{origin}/worker.js");
+            wasm_bindgen("{origin}/worker_bg.wasm");
+            "#
+        )
+        .into(),
+    );
+
+    let mut blob_props = BlobPropertyBag::new();
+    blob_props.type_("text/javascript");
+    let blob = Blob::new_with_str_sequence_and_options(&script, &blob_props)
+        .expect("failed to create blob");
+
+    let url = Url::create_object_url_with_blob(&blob).expect("failed to create url from blob");
+    Worker::new(&url).expect("failed to spawn worker")
+}
 
 #[function_component(App)]
 pub fn app() -> Html {
+    use_effect(|| {
+        let worker = load_worker();
+        // TODO: add event handlers
+        move || worker.terminate()
+    });
+
     let on_files = Callback::from(|files: Vec<File>| {
         log::debug!("got {} files", files.len());
     });

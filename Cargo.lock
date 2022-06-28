@@ -18,6 +18,7 @@ dependencies = [
  "chardet",
  "crc",
  "encoding",
+ "js-sys",
  "lazy_static",
  "log",
  "regex",

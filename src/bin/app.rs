@@ -1,8 +1,4 @@
-mod app;
-mod drag;
-mod form;
-
-use crate::app::App;
+use asstosrt_wasm::app::App;
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());

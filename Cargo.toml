@@ -8,6 +8,7 @@ edition = "2018"
 yew = "0.19"
 wasm-bindgen = "0.2"
 wasm-logger = "0.2.0"
+js-sys = "0.3"
 regex = "1.4"
 lazy_static = "1.4"
 encoding = "0.2"
@@ -24,4 +25,6 @@ features = [
     "DataTransferItem",
     "DataTransferItemList",
     "File",
+    "Worker",
+    "Url",
 ]
