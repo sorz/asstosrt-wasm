@@ -16,6 +16,7 @@ chardet = "0.2"
 simplecc = "0.2"
 crc = "3"
 log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.web-sys]
 version = "0.3"
@@ -27,4 +28,5 @@ features = [
     "File",
     "Worker",
     "Url",
+    "DedicatedWorkerGlobalScope",
 ]

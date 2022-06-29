@@ -3,6 +3,7 @@ mod form;
 
 use self::drag::DragDropComponent;
 use self::form::FormComponent;
+use crate::worker::Command;
 use js_sys::Array;
 use web_sys::{window, Blob, BlobPropertyBag, File, Url, Worker};
 use yew::prelude::*;
@@ -36,15 +37,18 @@ fn load_worker() -> Worker {
 
 #[function_component(App)]
 pub fn app() -> Html {
-    use_effect(|| {
-        let worker = load_worker();
-        // TODO: add event handlers
-        move || worker.terminate()
+    let worker = use_state(|| load_worker());
+
+    let on_files = Callback::from(move |files: Vec<File>| {
+        log::debug!("got {} files", files.len());
+        let cmd = Command::AddFile {
+            file: files.first().cloned(),
+        };
+        worker
+            .post_message(&cmd.into())
+            .expect("failed to post command");
     });
 
-    let on_files = Callback::from(|files: Vec<File>| {
-        log::debug!("got {} files", files.len());
-    });
     html! {
         <>
             <h1>
