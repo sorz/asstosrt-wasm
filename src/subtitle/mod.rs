@@ -149,7 +149,7 @@ where
     // find format line
     let format = events
         .find(|l| l.starts_with("Format:"))
-        .ok_or("[Events] or Foramt line not found")?;
+        .ok_or("[Events] or Format line not found")?;
     let format = DialogueFormat::new(format)?;
     // parse dialogues
     let mut dialogues = events
