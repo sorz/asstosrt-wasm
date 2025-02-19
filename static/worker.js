@@ -18,10 +18,10 @@ onmessage = async ev => {
 async function addFile(id, file, opts) {
   try {
     opts.conv_dict = await conv_dict;
-    let wasm = await Rust.asstosrt_wasm;
-    let ass = reader.readAsArrayBuffer(file);
-    let srt = wasm.assToSrt(ass, opts);
-    let url = URL.createObjectURL(srt);
+    const wasm = await Rust.asstosrt_wasm;
+    const ass = new Uint8Array(reader.readAsArrayBuffer(file));
+    const srt = wasm.assToSrt(ass, opts);
+    const url = URL.createObjectURL(srt);
     postMessage({id: id, url: url});
   } catch (e) {
     postMessage({id: id, error: e});
@@ -33,7 +33,7 @@ async function addFiles(id, files, opts) {
     opts.conv_dict = await conv_dict;
     let wasm = await Rust.asstosrt_wasm;
     let names = files.map(f => renameToSrt(f.name));
-    let contents = files.map(f => reader.readAsArrayBuffer(f));
+    let contents = files.map(f => new Uint8Array(reader.readAsArrayBuffer(f)));
     let zip = wasm.assToSrtBulk(contents, names, opts);
     let url = URL.createObjectURL(zip);
     postMessage({id: id, url: url});
