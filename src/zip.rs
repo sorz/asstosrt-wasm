@@ -1,18 +1,18 @@
 use crc::{Crc, Digest, CRC_32_ISO_HDLC};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 
-const LOCAL_FILE_HEADER_SIGNATURE: &'static [u8] = b"\x50\x4b\x03\x04";
-const CENTRAL_FILE_HEADER_SIGNATURE: &'static [u8] = b"\x50\x4b\x01\x02";
-const EOF_CENTRAL_FILE_HEADER_SIGNATURE: &'static [u8] = b"\x50\x4b\x05\x06";
-const VERSION_NEED_TO_EXTRACT_DEFAULT: &'static [u8] = b"\x00\x00";
-const VERSION_MADE_BY: &'static [u8] = b"\x00\x3f"; // 6.3
-const GENERAL_PURPOSE_BIT_FLAG: &'static [u8] = b"\x00\x00";
-const COMPRESSION_METHOD_STORE: &'static [u8] = b"\x00\x00";
-const LENGTH_ZERO: &'static [u8] = b"\x00\x00";
-const INTERNAL_FILE_ATTRS: &'static [u8] = b"\x10\x00"; // text file
-const EXTERNAL_FILE_ATTRS: &'static [u8] = b"\x00\x00\x00\x00";
-const UNICODE_PATH_EXTRA_FIELD: &'static [u8] = b"\x75\x70";
-const UNICODE_PATH_VERSION: &'static [u8] = b"\x01";
+const LOCAL_FILE_HEADER_SIGNATURE: &[u8] = b"\x50\x4b\x03\x04";
+const CENTRAL_FILE_HEADER_SIGNATURE: &[u8] = b"\x50\x4b\x01\x02";
+const EOF_CENTRAL_FILE_HEADER_SIGNATURE: &[u8] = b"\x50\x4b\x05\x06";
+const VERSION_NEED_TO_EXTRACT_DEFAULT: &[u8] = b"\x00\x00";
+const VERSION_MADE_BY: &[u8] = b"\x00\x3f"; // 6.3
+const GENERAL_PURPOSE_BIT_FLAG: &[u8] = b"\x00\x00";
+const COMPRESSION_METHOD_STORE: &[u8] = b"\x00\x00";
+const LENGTH_ZERO: &[u8] = b"\x00\x00";
+const INTERNAL_FILE_ATTRS: &[u8] = b"\x10\x00"; // text file
+const EXTERNAL_FILE_ATTRS: &[u8] = b"\x00\x00\x00\x00";
+const UNICODE_PATH_EXTRA_FIELD: &[u8] = b"\x75\x70";
+const UNICODE_PATH_VERSION: &[u8] = b"\x01";
 
 const CRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 

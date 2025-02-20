@@ -53,7 +53,7 @@ impl DialogueFormat {
     }
 }
 
-impl<'a> Dialogue<'a> {
+impl Dialogue<'_> {
     fn cleanse_text(&mut self) {
         lazy_static! {
             static ref RE_CMD: Regex = Regex::new(
@@ -82,13 +82,13 @@ impl<'a> Dialogue<'a> {
     }
 }
 
-impl<'a> Ord for Dialogue<'a> {
+impl Ord for Dialogue<'_> {
     fn cmp(&self, other: &Dialogue) -> Ordering {
         self.start.cmp(&other.start)
     }
 }
 
-impl<'a> PartialOrd for Dialogue<'a> {
+impl PartialOrd for Dialogue<'_> {
     fn partial_cmp(&self, other: &Dialogue) -> Option<Ordering> {
         Some(self.start.cmp(&other.start))
     }
@@ -98,10 +98,7 @@ impl<'a> PartialOrd for Dialogue<'a> {
 impl FromStr for Centisec {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let hmsc: Vec<u32> = s
-            .split(|c| c == ':' || c == '.')
-            .filter_map(|s| s.parse().ok())
-            .collect();
+        let hmsc: Vec<u32> = s.split([':', '.']).filter_map(|s| s.parse().ok()).collect();
         if hmsc.len() != 4 {
             return Err("time format error");
         }

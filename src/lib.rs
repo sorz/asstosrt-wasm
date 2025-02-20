@@ -45,22 +45,22 @@ impl TryFrom<Charset> for EncodingRef {
     }
 }
 
-impl Into<EncoderTrap> for IgnoreCodecErr {
-    fn into(self) -> EncoderTrap {
-        if self.0 {
-            EncoderTrap::Replace
+impl From<IgnoreCodecErr> for EncoderTrap {
+    fn from(val: IgnoreCodecErr) -> Self {
+        if val.0 {
+            Self::Replace
         } else {
-            EncoderTrap::Strict
+            Self::Strict
         }
     }
 }
 
-impl Into<DecoderTrap> for IgnoreCodecErr {
-    fn into(self) -> DecoderTrap {
-        if self.0 {
-            DecoderTrap::Replace
+impl From<IgnoreCodecErr> for DecoderTrap {
+    fn from(val: IgnoreCodecErr) -> Self {
+        if val.0 {
+            Self::Replace
         } else {
-            DecoderTrap::Strict
+            Self::Strict
         }
     }
 }
@@ -79,7 +79,7 @@ fn convert(ass: Uint8Array, opts: Options) -> Result<Box<[u8]>, StrError> {
     let in_charset = if let Some(charset) = opts.in_charset {
         charset.try_into()?
     } else {
-        detect_charset(&ass).ok_or_else(|| Cow::Borrowed("fail to detect ASS charset"))?
+        detect_charset(&ass).ok_or(Cow::Borrowed("fail to detect ASS charset"))?
     };
     let out_charset = opts.out_charset.map_or(Ok(in_charset), |l| l.try_into())?;
     let dict: Option<Dict> = opts.conv_dict.map(|s| Dict::load_str(&s));
@@ -100,7 +100,7 @@ fn convert(ass: Uint8Array, opts: Options) -> Result<Box<[u8]>, StrError> {
     // insert BOM for utf-16
     if out_charset
         .whatwg_name()
-        .map_or(false, |n| n.starts_with("utf-16"))
+        .is_some_and(|n| n.starts_with("utf-16"))
     {
         out_charset.encode_to("\u{feff}", EncoderTrap::Strict, &mut output)?;
     }
