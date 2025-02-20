@@ -1,4 +1,4 @@
-use crc::{crc32, Hasher32};
+use crc::{Crc, Digest, CRC_32_BZIP2};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 
 const LOCAL_FILE_HEADER_SIGNATURE: &'static [u8] = b"\x50\x4b\x03\x04";
@@ -13,6 +13,8 @@ const INTERNAL_FILE_ATTRS: &'static [u8] = b"\x10\x00"; // text file
 const EXTERNAL_FILE_ATTRS: &'static [u8] = b"\x00\x00\x00\x00";
 const UNICODE_PATH_EXTRA_FIELD: &'static [u8] = b"\x75\x70";
 const UNICODE_PATH_VERSION: &'static [u8] = b"\x01";
+
+const CRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_BZIP2);
 
 pub struct ZipWriter<W> {
     writer: W,
@@ -49,9 +51,9 @@ impl<'a> Utf8PathField<'a> {
             .unwrap();
         buf.write(UNICODE_PATH_VERSION).unwrap();
 
-        let mut digest = crc32::Digest::new(crc32::IEEE);
-        digest.write(self.path.as_bytes());
-        buf.write(&digest.sum32().to_le_bytes()).unwrap();
+        let mut digest = CRC32.digest();
+        digest.update(self.path.as_bytes());
+        buf.write(&digest.finalize().to_le_bytes()).unwrap();
 
         buf.write(self.path.as_bytes()).unwrap();
         buf.into_boxed_slice()
@@ -173,26 +175,26 @@ where
 
 struct Crc32Reader<R> {
     internal: R,
-    digest: crc32::Digest,
+    digest: Digest<'static, u32>,
 }
 
 impl<R: Read> Crc32Reader<R> {
     fn new(internal: R) -> Self {
         Crc32Reader {
             internal,
-            digest: crc32::Digest::new(crc32::IEEE),
+            digest: CRC32.digest(),
         }
     }
 
-    fn sum32(&self) -> u32 {
-        self.digest.sum32()
+    fn sum32(self) -> u32 {
+        self.digest.finalize()
     }
 }
 
 impl<R: Read> Read for Crc32Reader<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let len = self.internal.read(buf)?;
-        self.digest.write(&buf[0..len]);
+        self.digest.update(&buf[0..len]);
         Ok(len)
     }
 }

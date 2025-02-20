@@ -19,4 +19,4 @@ serde = { version = "1", features = ["derive"] }
 serde-wasm-bindgen = "0.6"
 serde_json = "1"
 simplecc = "0.2"
-crc = "1.8.1"
+crc = "3"
