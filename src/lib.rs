@@ -6,7 +6,7 @@ use encoding::{
     label::encoding_from_whatwg_label,
     types::{DecoderTrap, EncoderTrap, EncodingRef},
 };
-use js_sys::Uint8Array;
+use js_sys::{Array, Uint8Array};
 use serde::Deserialize;
 use simplecc::Dict;
 use std::{borrow::Cow, io::Cursor};
@@ -108,16 +108,19 @@ fn convert(ass: Uint8Array, opts: Options) -> Result<Box<[u8]>, StrError> {
     Ok(output.into_boxed_slice())
 }
 
+fn create_blob<T: AsRef<[u8]>>(buf: T, mime: &str) -> Result<Blob, JsValue> {
+    let blob_opts = BlobPropertyBag::new();
+    blob_opts.set_type(mime);
+    let blob_parts = Array::new();
+    blob_parts.push(&Uint8Array::from(buf.as_ref()));
+    Blob::new_with_u8_array_sequence_and_options(&blob_parts, &blob_opts)
+}
+
 #[wasm_bindgen(js_name = assToSrt)]
 pub fn ass_to_srt(ass: Uint8Array, opts: JsValue) -> Result<Blob, JsValue> {
     let opts = serde_wasm_bindgen::from_value(opts).unwrap();
-    let output: Uint8Array = convert(ass, opts)
-        .map_err(|err| JsValue::from_str(&err))?
-        .as_ref()
-        .into();
-    let blob_opts = BlobPropertyBag::new();
-    blob_opts.set_type("text/srt");
-    Blob::new_with_u8_array_sequence_and_options(&output, &blob_opts)
+    let output = convert(ass, opts).map_err(|err| JsValue::from_str(&err))?;
+    create_blob(output, "text/srt")
 }
 
 #[wasm_bindgen(js_name = assToSrtBulk)]
@@ -141,9 +144,5 @@ pub fn ass_to_srt_bulk(
         zip.close()
             .map_err(|_| JsValue::from_str("zip close error"))?;
     }
-
-    let output: Uint8Array = buf.get_ref().as_slice().into();
-    let blob_opts = BlobPropertyBag::new();
-    blob_opts.set_type("application/zip");
-    Blob::new_with_u8_array_sequence_and_options(&output, &blob_opts)
+    create_blob(buf.get_ref(), "application/zip")
 }
