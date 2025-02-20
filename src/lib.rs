@@ -108,7 +108,7 @@ fn convert(ass: Uint8Array, opts: Options) -> Result<Box<[u8]>, StrError> {
     Ok(output.into_boxed_slice())
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = assToSrt)]
 pub fn ass_to_srt(ass: Uint8Array, opts: JsValue) -> Result<Blob, JsValue> {
     let opts = serde_wasm_bindgen::from_value(opts).unwrap();
     let output: Uint8Array = convert(ass, opts)
@@ -120,7 +120,7 @@ pub fn ass_to_srt(ass: Uint8Array, opts: JsValue) -> Result<Blob, JsValue> {
     Blob::new_with_u8_array_sequence_and_options(&output, &blob_opts)
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = assToSrtBulk)]
 pub fn ass_to_srt_bulk(
     files: Vec<Uint8Array>,
     filenames: Vec<String>,

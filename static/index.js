@@ -1,5 +1,5 @@
 let $ = s => document.querySelector(s);
-let worker = new Worker("worker.js");
+let worker = new Worker("worker.js", {type: "module"});
 let nextId = 1;
 
 $("#files").addEventListener("change", async ev => {
@@ -87,6 +87,7 @@ function addFiles(files) {
     cmd.action = "addFiles";
     cmd.files = files;
   }
+  console.debug("post cmd", cmd);
   worker.postMessage(cmd);
 }
 
