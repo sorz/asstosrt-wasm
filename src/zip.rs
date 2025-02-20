@@ -1,4 +1,4 @@
-use crc::{Crc, Digest, CRC_32_BZIP2};
+use crc::{Crc, Digest, CRC_32_ISO_HDLC};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 
 const LOCAL_FILE_HEADER_SIGNATURE: &'static [u8] = b"\x50\x4b\x03\x04";
@@ -14,7 +14,7 @@ const EXTERNAL_FILE_ATTRS: &'static [u8] = b"\x00\x00\x00\x00";
 const UNICODE_PATH_EXTRA_FIELD: &'static [u8] = b"\x75\x70";
 const UNICODE_PATH_VERSION: &'static [u8] = b"\x01";
 
-const CRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_BZIP2);
+const CRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
 pub struct ZipWriter<W> {
     writer: W,
@@ -46,18 +46,25 @@ impl<'a> Utf8PathField<'a> {
 
     fn into_bytes(self) -> Box<[u8]> {
         let mut buf = Vec::with_capacity(self.path.len() + 9);
-        buf.write(UNICODE_PATH_EXTRA_FIELD).unwrap();
-        buf.write(&((self.path.len() + 5) as u16).to_le_bytes())
+        buf.write_all(UNICODE_PATH_EXTRA_FIELD).unwrap();
+        buf.write_all(&((self.path.len() + 5) as u16).to_le_bytes())
             .unwrap();
-        buf.write(UNICODE_PATH_VERSION).unwrap();
+        buf.write_all(UNICODE_PATH_VERSION).unwrap();
 
         let mut digest = CRC32.digest();
         digest.update(self.path.as_bytes());
-        buf.write(&digest.finalize().to_le_bytes()).unwrap();
+        buf.write_all(&digest.finalize().to_le_bytes()).unwrap();
 
-        buf.write(self.path.as_bytes()).unwrap();
+        buf.write_all(self.path.as_bytes()).unwrap();
         buf.into_boxed_slice()
     }
+}
+
+macro_rules! write_all {
+    ($writer:expr, $count:ident, $buf:expr) => {
+        $writer.write_all($buf)?;
+        $count += $buf.len();
+    };
 }
 
 impl FileHeader {
@@ -79,35 +86,35 @@ impl FileEntry {
         }
     }
 
-    fn write_header<W>(&self, write: &mut W, header: FileHeader) -> io::Result<usize>
+    fn write_header<W>(&self, w: &mut W, header: FileHeader) -> io::Result<usize>
     where
         W: Write,
     {
         let mut n = 0;
-        n += write.write(header.signature())?;
+        write_all!(w, n, header.signature());
         if header == FileHeader::Central {
-            n += write.write(VERSION_MADE_BY)?;
+            write_all!(w, n, VERSION_MADE_BY);
         }
-        n += write.write(VERSION_NEED_TO_EXTRACT_DEFAULT)?;
-        n += write.write(GENERAL_PURPOSE_BIT_FLAG)?;
-        n += write.write(COMPRESSION_METHOD_STORE)?;
-        n += write.write(b"\x00\x00\x00\x00")?; // time & date
-        n += write.write(&self.crc32.to_le_bytes())?;
+        write_all!(w, n, VERSION_NEED_TO_EXTRACT_DEFAULT);
+        write_all!(w, n, GENERAL_PURPOSE_BIT_FLAG);
+        write_all!(w, n, COMPRESSION_METHOD_STORE);
+        write_all!(w, n, b"\x00\x00\x00\x00"); // time & date
+        write_all!(w, n, &self.crc32.to_le_bytes());
         let size_bytes = (self.size as u32).to_le_bytes();
-        n += write.write(&size_bytes)?;
-        n += write.write(&size_bytes)?;
-        n += write.write(&(self.filename.len() as u16).to_le_bytes())?;
+        write_all!(w, n, &size_bytes);
+        write_all!(w, n, &size_bytes);
+        write_all!(w, n, &(self.filename.len() as u16).to_le_bytes());
         let extra = Utf8PathField::new(&self.filename).into_bytes();
-        n += write.write(&(extra.len() as u16).to_le_bytes())?;
+        write_all!(w, n, &(extra.len() as u16).to_le_bytes());
         if header == FileHeader::Central {
-            n += write.write(LENGTH_ZERO)?; // file comment
-            n += write.write(LENGTH_ZERO)?; // disk number
-            n += write.write(INTERNAL_FILE_ATTRS)?;
-            n += write.write(EXTERNAL_FILE_ATTRS)?;
-            n += write.write(&(self.offset as u32).to_le_bytes())?;
+            write_all!(w, n, LENGTH_ZERO); // file comment
+            write_all!(w, n, LENGTH_ZERO); // disk number
+            write_all!(w, n, INTERNAL_FILE_ATTRS);
+            write_all!(w, n, EXTERNAL_FILE_ATTRS);
+            write_all!(w, n, &(self.offset as u32).to_le_bytes());
         }
-        n += write.write(self.filename.as_bytes())?;
-        n += write.write(&extra)?;
+        write_all!(w, n, self.filename.as_bytes());
+        write_all!(w, n, &extra);
         Ok(n)
     }
 }
@@ -161,14 +168,14 @@ where
             len += file.write_header(&mut writer, FileHeader::Central)?;
         }
 
-        writer.write(EOF_CENTRAL_FILE_HEADER_SIGNATURE)?;
-        writer.write(LENGTH_ZERO)?; // number of this disk
-        writer.write(&1u16.to_le_bytes())?; // disk w/ central dir
-        writer.write(&entries_len)?; // in the central dir on this disk
-        writer.write(&entries_len)?; // total in the central dir
-        writer.write(&(len as u32).to_le_bytes())?;
-        writer.write(&(cursor as u32).to_le_bytes())?;
-        writer.write(LENGTH_ZERO)?; // zip file comment
+        writer.write_all(EOF_CENTRAL_FILE_HEADER_SIGNATURE)?;
+        writer.write_all(LENGTH_ZERO)?; // number of this disk
+        writer.write_all(&1u16.to_le_bytes())?; // disk w/ central dir
+        writer.write_all(&entries_len)?; // in the central dir on this disk
+        writer.write_all(&entries_len)?; // total in the central dir
+        writer.write_all(&(len as u32).to_le_bytes())?;
+        writer.write_all(&(cursor as u32).to_le_bytes())?;
+        writer.write_all(LENGTH_ZERO)?; // zip file comment
         Ok(())
     }
 }
@@ -194,7 +201,7 @@ impl<R: Read> Crc32Reader<R> {
 impl<R: Read> Read for Crc32Reader<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let len = self.internal.read(buf)?;
-        self.digest.update(&buf[0..len]);
+        self.digest.update(&buf[..len]);
         Ok(len)
     }
 }
