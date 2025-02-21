@@ -1,4 +1,4 @@
-use super::{ass_to_srt, Centisec, Dialogue};
+use super::{Centisec, Dialogue, ass_to_srt};
 
 #[test]
 fn test_cleanse_text() {

@@ -1,4 +1,4 @@
-use crc::{Crc, Digest, CRC_32_ISO_HDLC};
+use crc::{CRC_32_ISO_HDLC, Crc, Digest};
 use std::io::{self, Read, Seek, SeekFrom, Write};
 
 const LOCAL_FILE_HEADER_SIGNATURE: &[u8] = b"\x50\x4b\x03\x04";

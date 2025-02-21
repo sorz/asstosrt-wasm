@@ -11,7 +11,7 @@ use serde::Deserialize;
 use simplecc::Dict;
 use std::{borrow::Cow, io::Cursor};
 use wasm_bindgen::prelude::*;
-use web_sys::{console, Blob, BlobPropertyBag};
+use web_sys::{Blob, BlobPropertyBag, console};
 
 #[derive(Deserialize, Debug, Clone)]
 struct Charset(String);
@@ -47,21 +47,13 @@ impl TryFrom<Charset> for EncodingRef {
 
 impl From<IgnoreCodecErr> for EncoderTrap {
     fn from(val: IgnoreCodecErr) -> Self {
-        if val.0 {
-            Self::Replace
-        } else {
-            Self::Strict
-        }
+        if val.0 { Self::Replace } else { Self::Strict }
     }
 }
 
 impl From<IgnoreCodecErr> for DecoderTrap {
     fn from(val: IgnoreCodecErr) -> Self {
-        if val.0 {
-            Self::Replace
-        } else {
-            Self::Strict
-        }
+        if val.0 { Self::Replace } else { Self::Strict }
     }
 }
 
