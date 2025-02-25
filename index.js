@@ -1,5 +1,5 @@
 let $ = s => document.querySelector(s);
-let worker = new Worker("worker.js");
+let worker = new Worker("worker.js", {type: "module"});
 let nextId = 1;
 
 $("#files").addEventListener("change", async ev => {
@@ -7,7 +7,7 @@ $("#files").addEventListener("change", async ev => {
   for (let i = 0; i < ev.target.files.length; i++) {
     files.push(ev.target.files.item(i));
   }
-  submit(files);
+  if (files.length > 0) submit(files);
 });
 
 $("#like").addEventListener("click", function(ev) {
@@ -27,7 +27,7 @@ function onDrop(ev) {
   let items = [...ev.dataTransfer.items]
     .filter(i => i.kind == "file")
     .map(f => f.getAsFile());
-  submit(items);
+  if (items.length > 0) submit(items);
 };
 
 function onDropOver(ev) {
@@ -87,6 +87,7 @@ function addFiles(files) {
     cmd.action = "addFiles";
     cmd.files = files;
   }
+  console.debug("post cmd", cmd);
   worker.postMessage(cmd);
 }
 
