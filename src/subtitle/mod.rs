@@ -1,7 +1,9 @@
 use lazy_static::lazy_static;
+use lines::UniversalLines;
 use regex::Regex;
 use std::{borrow::Cow, cmp::Ordering, collections::HashMap, fmt, str::FromStr};
 
+mod lines;
 #[cfg(test)]
 mod tests;
 
@@ -137,8 +139,7 @@ where
     F: FnMut(String) -> Option<String>,
 {
     // find lines within [Events]
-    let mut events = ass
-        .lines()
+    let mut events = UniversalLines::new(ass)
         .skip_while(|l| !l.starts_with("[Events]"))
         .skip(1)
         .take_while(|l| !l.starts_with("["))
