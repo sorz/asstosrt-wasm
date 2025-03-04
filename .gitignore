@@ -3,3 +3,4 @@
 /pkg
 /static/asstosrt_wasm_bg.wasm
 /static/asstosrt_wasm.js
+/dist
