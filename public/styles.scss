@@ -37,16 +37,16 @@ h6 {
   padding: 2rem;
 }
 
-p,
-button {
-  margin: var(--size-6);
+footer {
+  opacity: 0.5;
 }
 
-body > picture,
-button {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: center;
-  margin: 2rem;
+form#options {
+  p {
+    margin: 1rem 0;
+  }
+  
+  input:invalid {
+    outline: 2px solid red;
+  }
 }
