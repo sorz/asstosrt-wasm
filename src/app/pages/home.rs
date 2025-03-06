@@ -18,11 +18,7 @@ pub fn Home() -> impl IntoView {
                 <abbr title="SubRip">SRT</abbr>
                 Subtitles Converter
             </h1>
-            <p>
-                Only support for those newer browsers.<br />You can
-                <a href="https://lab.sorz.org/tools/asstosrt/">try this</a>
-                if it does not work for you.
-            </p>
+
             <ErrorBoundary fallback=|errors| {
                 view! {
                     <h1>"Uh oh! Something went wrong!"</h1>
@@ -40,35 +36,40 @@ pub fn Home() -> impl IntoView {
                     </ul>
                 }
             }>
-
-                <h2>Options</h2>
-
                 <details>
-                    <summary>Show encodings, lines, zip, etc.</summary>
-
+                    <summary>Show options</summary>
                     <form id="options">
                         <OptionsForm options=options />
                     </form>
                 </details>
 
-                <h2>Drop your ASS/SSA Files</h2>
-
-                <h2>Save SRT Files</h2>
-
-                <footer>
-                    <p>Your files keep on your device and would NOT be uploaded to anywhere.</p>
+                <div id="drop-area">
+                    <p>Drag & drop your files here</p>
                     <p>
-                        Powered by
-                        <a href="https://www.rust-lang.org/" title="The Rust Programming Language">
-                            Rust
-                        </a>and a set of lovely open-source projects.
+                        <input type="file" id="files" accept=".ass, .ssa" multiple />
                     </p>
-                    <p>
-                        Source code is avaiable on
-                        <a href="https://github.com/sorz/asstosrt-wasm">GitHub</a>.
-                    </p>
-                </footer>
+                    <p>Select/drop multiple files at once for bulk processing</p>
+                </div>
             </ErrorBoundary>
+
+            <p>
+                Only new browsers are supported. If that dose not work,
+                <a href="https://lab.sorz.org/tools/asstosrt/">try this</a>.
+            </p>
+
+            <footer>
+                <p>Your files keep on your device and would NOT be uploaded to anywhere.</p>
+                <p>
+                    Powered by
+                    <a href="https://www.rust-lang.org/" title="The Rust Programming Language">
+                        Rust
+                    </a>and a set of lovely open-source projects.
+                </p>
+                <p>
+                    Source code is avaiable on
+                    <a href="https://github.com/sorz/asstosrt-wasm">GitHub</a>.
+                </p>
+            </footer>
         </div>
     }
 }

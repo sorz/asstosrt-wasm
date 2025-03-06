@@ -41,6 +41,25 @@ footer {
   opacity: 0.5;
 }
 
+#drop-area {
+  border: dashed 3px black;
+  border-radius: var(--radius-3);
+  padding: var(--size-fluid-3);
+  margin: 2rem 0;
+
+  @media (prefers-color-scheme: dark) {
+    border-color: white;
+  }
+
+  p {
+    margin: 1rem 0;
+  }
+
+  p:first-of-type {
+    font-size: var(--font-size-4);
+  }
+}
+
 form#options {
   p {
     margin: 1rem 0;
