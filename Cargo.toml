@@ -4,6 +4,11 @@ version = "0.1.0"
 authors = ["sorz <orz@sorz.org>"]
 edition = "2024"
 
+[profile.release]
+opt-level = 'z'
+lto = true
+codegen-units = 1
+
 [dependencies]
 leptos = { version = "0.7", features = ["csr", "nightly"] }
 leptos_meta = { version = "0.7" }
