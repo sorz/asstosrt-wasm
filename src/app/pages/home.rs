@@ -1,7 +1,10 @@
 use leptos::prelude::*;
 use reactive_stores::Store;
 
-use crate::{Options, app::components::options_form::OptionsForm};
+use crate::{
+    Options,
+    app::components::{FileInput, OptionsForm},
+};
 
 /// Default Home Page
 #[component]
@@ -43,13 +46,8 @@ pub fn Home() -> impl IntoView {
                     </form>
                 </details>
 
-                <div id="drop-area">
-                    <p>Drag & drop your files here</p>
-                    <p>
-                        <input type="file" id="files" accept=".ass, .ssa" multiple />
-                    </p>
-                    <p>Select/drop multiple files at once for bulk processing</p>
-                </div>
+                <FileInput on_files=|files| log::debug!("file received: {:?}", files) />
+
             </ErrorBoundary>
 
             <p>
