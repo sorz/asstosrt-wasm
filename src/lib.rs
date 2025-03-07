@@ -2,6 +2,8 @@ use leptos::prelude::*;
 use reactive_stores::Store;
 use serde::{Deserialize, Serialize};
 use strum::{EnumString, IntoStaticStr};
+use wasm_bindgen::JsValue;
+use web_sys::{Blob, File};
 
 pub mod app;
 pub mod worker;
@@ -55,5 +57,21 @@ pub struct Options {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WorkerMessage {
-    Ready,
+    WorkerReady,
+    TaskDone(Result<TaskResult, String>),
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskResult {
+    #[serde(with = "serde_wasm_bindgen::preserve")]
+    file_blob: Blob,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskRequest {
+    pub options: Options,
+    pub files: Vec<FileWrap>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileWrap(#[serde(with = "serde_wasm_bindgen::preserve")] pub File);

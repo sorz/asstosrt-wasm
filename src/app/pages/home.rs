@@ -1,5 +1,8 @@
+use std::cell::LazyCell;
+
 use leptos::prelude::*;
 use reactive_stores::Store;
+use web_sys::File;
 
 use crate::{
     Options,
@@ -9,12 +12,19 @@ use crate::{
     },
 };
 
+const CONVERTER: LazyCell<Converter> = LazyCell::new(|| Converter::new());
+
 /// Default Home Page
 #[component]
 pub fn Home() -> impl IntoView {
     let options = Store::new(Options::default());
-
-    let converter = Memo::new(|_| Converter::new());
+    let convert = Action::new_local(move |files: &Vec<File>| {
+        let files = files.clone();
+        let options = options.read_untracked().clone();
+        async move {
+            CONVERTER.convert(options, files).await;
+        }
+    });
 
     view! {
         <div class="container">
@@ -53,7 +63,7 @@ pub fn Home() -> impl IntoView {
 
                 <FileInput on_files=move |files| {
                     log::debug!("file received: {:?}", files);
-                    drop(converter.read());
+                    convert.dispatch_local(files);
                 } />
 
             </ErrorBoundary>

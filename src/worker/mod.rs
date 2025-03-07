@@ -11,7 +11,12 @@ use serde::Deserialize;
 use simplecc::Dict;
 use std::{borrow::Cow, io::Cursor};
 use wasm_bindgen::prelude::*;
-use web_sys::{Blob, BlobPropertyBag, console};
+use web_sys::{Blob, BlobPropertyBag, FileReaderSync, console};
+
+use crate::{TaskRequest, TaskResult};
+
+const MIME_SRT: &str = "text/srt";
+const MIME_ZIP: &str = "application/zip";
 
 #[derive(Deserialize, Debug, Clone)]
 struct Charset(String);
@@ -64,6 +69,51 @@ fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
     let result = chardet::detect(s);
     console::log_1(&format!("chardet {:?}", result).into());
     encoding_from_whatwg_label(charset2encoding(&result.0))
+}
+
+pub fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String> {
+    let reader = FileReaderSync::new().unwrap();
+    // TODO: check & limit input file size
+    let (content, mime) = if task.files.len() <= 1 {
+        // single file, no zip
+        let input_buf = {
+            let file = &task.files.first().unwrap().0;
+            let array = reader.read_as_array_buffer(file).unwrap();
+            let mut buf = vec![0u8; array.byte_length().try_into().unwrap()];
+            Uint8Array::new(&array).copy_to(&mut buf);
+            buf
+        };
+        let output = convert_single_file(&input_buf, &task.options)?;
+        (output, MIME_SRT)
+    } else {
+        // mulpitle files, with zip
+        let files = task.files.into_iter().map(|file| {
+            let name = file.0.name().trim_end_matches(".ass").to_string() + ".srt";
+            let content = reader
+                .read_as_array_buffer(&file.0)
+                .map(|array| Uint8Array::new(&array));
+            (name, content)
+        });
+        let mut input_buf = vec![0u8; 0];
+        let mut output_buf = Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(&mut output_buf);
+        for (name, file) in files {
+            let file = file.expect("failed to open file");
+            input_buf.resize(file.length().try_into().unwrap(), 0);
+            file.copy_to(&mut input_buf);
+            let output = convert_single_file(&input_buf, &task.options)?;
+            zip.write_file(&name, output.as_ref()).unwrap();
+        }
+        zip.close().unwrap();
+        (output_buf.into_inner().into_boxed_slice(), MIME_ZIP)
+    };
+    Ok(TaskResult {
+        file_blob: create_blob(&content, mime).unwrap(),
+    })
+}
+
+fn convert_single_file(input: &[u8], opts: &crate::Options) -> Result<Box<[u8]>, StrError> {
+    todo!()
 }
 
 fn convert(ass: Uint8Array, opts: Options) -> Result<Box<[u8]>, StrError> {

@@ -1,12 +1,16 @@
-use std::cell::RefCell;
-
+use futures::channel::oneshot::{Receiver, channel};
+use send_wrapper::SendWrapper;
+use std::sync::Mutex;
 use wasm_bindgen::prelude::*;
-use web_sys::{MessageEvent, Worker, WorkerOptions, WorkerType};
+use web_sys::{Blob, File, MessageEvent, Worker, WorkerOptions, WorkerType};
 
-thread_local!(static WORKER: RefCell<Worker> = panic!("worker not initlized on current thread"));
+use crate::{FileWrap, Options, TaskRequest, WorkerMessage};
 
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Converter;
+#[derive(Debug)]
+pub(crate) struct Converter {
+    worker: SendWrapper<Worker>,
+    ready: Mutex<Option<Receiver<()>>>,
+}
 
 impl Converter {
     pub(crate) fn new() -> Self {
@@ -16,13 +20,53 @@ impl Converter {
         let worker: Worker =
             Worker::new_with_options("./worker_loader.js", &opts).expect("failed to spawn worker");
 
-        let on_message = Closure::<dyn Fn(MessageEvent)>::new(move |ev: MessageEvent| {
-            web_sys::console::log_2(&"new message (app)".into(), &ev.data());
-            // TODO
+        let (ready_tx, ready_rx) = channel::<()>();
+        let worker_ = worker.clone();
+        let on_message = Closure::once(move |ev: MessageEvent| {
+            match serde_wasm_bindgen::from_value(ev.data()) {
+                Ok(WorkerMessage::WorkerReady) => ready_tx.send(()).unwrap(),
+                Ok(msg) => log::warn!("unexpected message {:?}", msg),
+                Err(err) => log::error!("failed to parse message {:?}", err),
+            }
+            worker_.set_onmessage(None);
         });
         worker.set_onmessage(Some(on_message.as_ref().unchecked_ref()));
         on_message.forget();
-        WORKER.set(worker);
-        Self {}
+        Self {
+            worker: SendWrapper::new(worker),
+            ready: Some(ready_rx).into(),
+        }
+    }
+
+    pub(crate) async fn convert(&self, options: Options, files: Vec<File>) -> Result<Blob, String> {
+        // wait for worker ready
+        if let Some(ready) = self.ready.lock().unwrap().take() {
+            log::debug!("wait for worker ready");
+            ready.await.unwrap();
+        }
+        // setup event listener
+        let (result_tx, result_rx) = channel();
+        let worker = self.worker.clone().take();
+        let on_message = Closure::once(move |ev: MessageEvent| {
+            match serde_wasm_bindgen::from_value(ev.data()) {
+                Ok(WorkerMessage::TaskDone(result)) => result_tx.send(result).unwrap(),
+                Ok(msg) => log::warn!("unexpected message {:?}", msg),
+                Err(err) => log::error!("failed to parse message {:?}", err),
+            }
+            worker.set_onmessage(None);
+        });
+        let worker = self.worker.clone().take();
+        worker.set_onmessage(Some(on_message.as_ref().unchecked_ref()));
+        on_message.forget();
+        // send request
+        let request = TaskRequest {
+            options,
+            files: files.into_iter().map(FileWrap).collect(),
+        };
+        worker
+            .post_message(&serde_wasm_bindgen::to_value(&request).unwrap())
+            .unwrap();
+        // wait response
+        result_rx.await.unwrap().map(|r| r.file_blob)
     }
 }

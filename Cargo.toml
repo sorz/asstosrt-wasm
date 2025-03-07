@@ -21,13 +21,14 @@ wasm-bindgen = "0.2"
 web-sys = { version = "0.3", features = [
     "console",
     "Blob", "BlobPropertyBag",
-    "File", "FileList",
+    "File", "FileList", "FileReaderSync",
     "DataTransfer", "DataTransferItem", "DataTransferItemList",
-    "DedicatedWorkerGlobalScope",
-    "Worker", "WorkerOptions", "WorkerType",
+    "DedicatedWorkerGlobalScope", "Worker", "WorkerOptions", "WorkerType",
 ] }
 js-sys = { version = "0.3" }
 regex = "1"
+futures = "0.3"
+send_wrapper = "0.6"
 lazy_static = "1"
 encoding = "0.2"
 chardet = "0.2"
