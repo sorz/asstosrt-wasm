@@ -52,3 +52,8 @@ pub struct Options {
     pub offset_secs: f32,
     pub no_zip: bool,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum WorkerMessage {
+    Ready,
+}

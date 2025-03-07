@@ -6,8 +6,8 @@
   <!-- If using Tailwind with Leptos CSR, see https://trunkrs.dev/assets/#tailwind instead-->
   <link data-trunk rel="scss" href="public/styles.scss" />
 
-  <!-- include support for `wasm-bindgen --weak-refs` - see: https://rustwasm.github.io/docs/wasm-bindgen/reference/weak-references.html -->
   <link data-trunk rel="rust" data-bin="app" data-wasm-opt="z" data-weak-refs />
+  <link data-trunk rel="rust" data-bin="worker" data-type="worker" data-wasm-opt="z" data-loader-shim data-bindgen-target="web" />
 </head>
 
 <body></body>

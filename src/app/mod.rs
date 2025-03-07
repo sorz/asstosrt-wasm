@@ -5,6 +5,7 @@ use leptos_router::{components::*, path};
 use pages::{home::Home, not_found::NotFound};
 
 mod components;
+mod converter;
 mod pages;
 
 #[component]

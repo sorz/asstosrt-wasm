@@ -3,13 +3,18 @@ use reactive_stores::Store;
 
 use crate::{
     Options,
-    app::components::{FileInput, OptionsForm},
+    app::{
+        components::{FileInput, OptionsForm},
+        converter::Converter,
+    },
 };
 
 /// Default Home Page
 #[component]
 pub fn Home() -> impl IntoView {
     let options = Store::new(Options::default());
+
+    let converter = Memo::new(|_| Converter::new());
 
     view! {
         <div class="container">
@@ -46,7 +51,10 @@ pub fn Home() -> impl IntoView {
                     </form>
                 </details>
 
-                <FileInput on_files=|files| log::debug!("file received: {:?}", files) />
+                <FileInput on_files=move |files| {
+                    log::debug!("file received: {:?}", files);
+                    drop(converter.read());
+                } />
 
             </ErrorBoundary>
 
