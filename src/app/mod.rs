@@ -7,6 +7,7 @@ use pages::{home::Home, not_found::NotFound};
 mod components;
 mod converter;
 mod pages;
+mod task;
 
 #[component]
 pub fn App() -> impl IntoView {

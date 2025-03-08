@@ -7,8 +7,9 @@ use web_sys::File;
 use crate::{
     Options,
     app::{
-        components::{FileInput, OptionsForm},
+        components::{FileInput, OptionsForm, TaskRow},
         converter::Converter,
+        task::{Task, Tasks},
     },
 };
 
@@ -18,6 +19,8 @@ const CONVERTER: LazyCell<Converter> = LazyCell::new(|| Converter::new());
 #[component]
 pub fn Home() -> impl IntoView {
     let options = Store::new(Options::default());
+    let (tasks, set_tasks) = signal(Tasks::default());
+
     let convert = Action::new_local(move |files: &Vec<File>| {
         let files = files.clone();
         let options = options.read_untracked().clone();
@@ -61,10 +64,16 @@ pub fn Home() -> impl IntoView {
                     </form>
                 </details>
 
-                <FileInput on_files=move |files| {
-                    log::debug!("file received: {:?}", files);
-                    convert.dispatch_local(files);
-                } />
+                <FileInput on_files=move |files| set_tasks.write().add(Task::new(files)) />
+                <ul class="task-list">
+                    <For
+                        each=move || tasks.get().0.into_iter().rev()
+                        key=|task| task.id
+                        children=move |task| {
+                            view! { <TaskRow task /> }
+                        }
+                    />
+                </ul>
 
             </ErrorBoundary>
 

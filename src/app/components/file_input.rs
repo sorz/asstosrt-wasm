@@ -36,7 +36,9 @@ pub(crate) fn FileInput(#[prop(into)] on_files: UnsyncCallback<(Vec<File>,), ()>
                             let files: Vec<_> = (0..files.length())
                                 .filter_map(|idx| files.get(idx))
                                 .collect();
-                            on_files.run((files,));
+                            if !files.is_empty() {
+                                on_files.run((files,));
+                            }
                         }
                     }
                 />
