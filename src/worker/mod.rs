@@ -113,7 +113,8 @@ pub fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String> {
 }
 
 fn convert_single_file(input: &[u8], opts: &crate::Options) -> Result<Box<[u8]>, StrError> {
-    todo!()
+    //todo!()
+    Ok(vec![0u8; 0].into_boxed_slice())
 }
 
 fn convert(ass: Uint8Array, opts: Options) -> Result<Box<[u8]>, StrError> {

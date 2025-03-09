@@ -14,7 +14,7 @@ impl Tasks {
     }
 
     pub(crate) fn remove(&mut self, task_id: Uuid) {
-        self.retain(|task| task.id == task_id);
+        self.retain(|task| task.id != task_id);
     }
 
     /// Clear all done/error tasks
@@ -23,6 +23,13 @@ impl Tasks {
             let state = task.state.read();
             state.is_done() || state.is_error()
         });
+    }
+
+    pub(crate) fn get_next_pending(&self) -> Option<Task> {
+        self.0
+            .iter()
+            .find(|task| task.state.read().is_pending())
+            .copied()
     }
 
     fn retain(&mut self, mut f: impl FnMut(&Task) -> bool) {
@@ -36,10 +43,10 @@ impl Tasks {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Task {
     pub(crate) id: Uuid,
-    pub(crate) filenames: Vec<String>,
+    pub(crate) filenames: RwSignal<Vec<String>>,
     pub(crate) state: RwSignal<TaskState, LocalStorage>,
 }
 
@@ -53,14 +60,15 @@ pub(crate) enum TaskState {
 
 impl Task {
     pub(crate) fn new(files: Vec<File>) -> Self {
+        let filenames = files.iter().map(|f| f.name()).collect();
         Self {
             id: Uuid::new_v4(),
-            filenames: files.iter().map(|f| f.name()).collect(),
+            filenames: RwSignal::new(filenames),
             state: RwSignal::new_local(TaskState::Pending { files }),
         }
     }
 
-    pub(crate) fn set_working(&mut self) -> Option<Vec<File>> {
+    pub(crate) fn set_working(&self) -> Option<Vec<File>> {
         let mut ret = None;
         self.state.update(|state| {
             ret = match mem::replace(state, TaskState::Working) {
@@ -71,11 +79,11 @@ impl Task {
         ret
     }
 
-    pub(crate) fn set_done(&mut self, file: Blob) {
+    pub(crate) fn set_done(&self, file: Blob) {
         self.state.set(TaskState::Done { file });
     }
 
-    pub(crate) fn set_error(&mut self, message: String) {
+    pub(crate) fn set_error(&self, message: String) {
         self.state.set(TaskState::Error { message })
     }
 }

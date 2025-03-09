@@ -1,8 +1,5 @@
-use std::cell::LazyCell;
-
 use leptos::prelude::*;
 use reactive_stores::Store;
-use web_sys::File;
 
 use crate::{
     Options,
@@ -13,19 +10,29 @@ use crate::{
     },
 };
 
-const CONVERTER: LazyCell<Converter> = LazyCell::new(|| Converter::new());
-
 /// Default Home Page
 #[component]
 pub fn Home() -> impl IntoView {
     let options = Store::new(Options::default());
     let (tasks, set_tasks) = signal(Tasks::default());
+    let converter: Converter = use_context().expect("converter not found");
 
-    let convert = Action::new_local(move |files: &Vec<File>| {
-        let files = files.clone();
+    let convert = Action::new_local(move |task: &Task| {
+        let task = task.clone();
+        let files = task.set_working().unwrap();
         let options = options.read_untracked().clone();
+        let converter = converter.clone();
         async move {
-            CONVERTER.convert(options, files).await;
+            match converter.convert(options, files).await {
+                Ok(file) => task.set_done(file),
+                Err(msg) => task.set_error(msg),
+            }
+        }
+    });
+
+    Effect::new(move |_| {
+        if let Some(task) = tasks.get().get_next_pending() {
+            convert.dispatch_local(task);
         }
     });
 
@@ -70,7 +77,7 @@ pub fn Home() -> impl IntoView {
                         each=move || tasks.get().0.into_iter().rev()
                         key=|task| task.id
                         children=move |task| {
-                            view! { <TaskRow task /> }
+                            view! { <TaskRow task set_tasks /> }
                         }
                     />
                 </ul>

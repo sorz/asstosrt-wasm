@@ -1,3 +1,4 @@
+use converter::Converter;
 use leptos::prelude::*;
 use leptos_meta::*;
 use leptos_router::{components::*, path};
@@ -13,7 +14,9 @@ mod task;
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
-
+    if use_context::<Converter>().is_none() {
+        provide_context(Converter::new());
+    }
     view! {
         <Html attr:lang="en" attr:dir="ltr" attr:data-theme="light" />
         <Title text="ASS/SSA to SRT Subtitles Converter" />

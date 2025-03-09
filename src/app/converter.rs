@@ -1,15 +1,15 @@
 use futures::channel::oneshot::{Receiver, channel};
 use send_wrapper::SendWrapper;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 use web_sys::{Blob, File, MessageEvent, Worker, WorkerOptions, WorkerType};
 
 use crate::{FileWrap, Options, TaskRequest, WorkerMessage};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Converter {
     worker: SendWrapper<Worker>,
-    ready: Mutex<Option<Receiver<()>>>,
+    ready: Arc<Mutex<Option<Receiver<()>>>>,
 }
 
 impl Converter {
@@ -34,7 +34,7 @@ impl Converter {
         on_message.forget();
         Self {
             worker: SendWrapper::new(worker),
-            ready: Some(ready_rx).into(),
+            ready: Mutex::new(Some(ready_rx)).into(),
         }
     }
 
