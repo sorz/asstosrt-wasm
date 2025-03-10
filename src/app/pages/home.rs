@@ -4,7 +4,7 @@ use reactive_stores::Store;
 use crate::{
     Options,
     app::{
-        components::{FileInput, OptionsForm, TaskRow},
+        components::{FileInput, OptionsForm, TaskList},
         converter::Converter,
         task::{Task, Tasks},
     },
@@ -72,24 +72,15 @@ pub fn Home() -> impl IntoView {
                 </details>
 
                 <FileInput on_files=move |files| set_tasks.write().add(Task::new(files)) />
-                <ul class="task-list">
-                    <For
-                        each=move || tasks.get().0.into_iter().rev()
-                        key=|task| task.id
-                        children=move |task| {
-                            view! { <TaskRow task set_tasks /> }
-                        }
-                    />
-                </ul>
+                <TaskList tasks set_tasks />
 
             </ErrorBoundary>
 
-            <p>
-                Only new browsers are supported. If that dose not work,
-                <a href="https://lab.sorz.org/tools/asstosrt/">try this</a>.
-            </p>
-
             <footer>
+                <p>
+                    Only new browsers are supported. If that dose not work,
+                    <a href="https://lab.sorz.org/tools/asstosrt/">try this</a>.
+                </p>
                 <p>Your files keep on your device and would NOT be uploaded to anywhere.</p>
                 <p>
                     Powered by

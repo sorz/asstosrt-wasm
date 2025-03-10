@@ -39,6 +39,7 @@ h6 {
 
 footer {
   opacity: 0.5;
+  margin-top: 2rem;
 }
 
 .drop-zone {
@@ -67,5 +68,92 @@ form#options {
   
   input:invalid {
     outline: 2px solid red;
+  }
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  list-style: none;
+  row-gap: var(--size-fluid-2);
+  padding: 0;
+
+  > li {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    max-inline-size: var(--size-content-3);
+    inline-size: var(--size-content-3);
+    box-shadow: var(--shadow-1);
+    border-radius: var(--radius-2);
+    padding: var(--size-fluid-2);
+
+    &:hover {
+      box-shadow: var(--shadow-3);
+    }
+
+    @media (prefers-color-scheme: light) {
+      background-color: var(--gray-3);
+      &.done { background-color: var(--lime-3); }
+      &.error { background-color: var(--red-3); }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background-color: var(--gray-8);
+      &.done { background-color: var(--teal-11); }
+      &.error { background-color: var(--red-11); }
+    }
+  }
+
+  .state {
+    align-self: flex-start;
+    font-size: var(--font-size-1);
+    opacity: 0.6;
+    font-weight: var(--font-weight-4);
+  }
+
+  .title-line {
+    display: flex;
+    flex-direction: row;
+
+    .title {
+      flex: 1;
+      font-size: var(--font-size-3);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+  }
+
+  details {
+    background: none;
+    padding: 0;
+    margin: var(--size-fluid-1) 0;
+    font-size: var(--font-size-0);
+    opacity: 0.6;
+
+    summary {
+      background: none;
+      padding-top: var(--size-fluid-1);
+      padding-bottom: 0;
+      text-align: end;
+    }
+
+    ol {
+      text-align: start;
+      font-size: var(--font-size-1);
+      list-style-position: inside;
+      padding-left: 0;
+    }
+
+    li {
+      max-width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
   }
 }

@@ -1,33 +1,50 @@
 use leptos::prelude::*;
 
-use crate::app::task::{Task, Tasks};
+use crate::app::task::{Task, TaskState, Tasks};
 
 #[component]
-pub(crate) fn TaskRow(task: Task, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
-    let (expanded, set_expanded) = signal(false);
+pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
+    view! {
+        <ul class="task-list">
+            <For
+                each=move || tasks.get().0.into_iter().rev()
+                key=|task| task.id
+                children=move |task| {
+                    view! { <TaskItem task set_tasks /> }
+                }
+            />
+        </ul>
+    }
+}
 
+#[component]
+fn TaskItem(task: Task, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
     let title = move || {
         let fns = task.filenames.get();
-        let n = fns.len();
         let title = fns.into_iter().next().expect("empty file list");
-        let and_n_files = Some(n).take_if(|n| *n > 1).map(|n| {
-            view! {
-                <span>+{n - 1}</span>
-                <button on:click=move |_| {
-                    set_expanded.update(|c| *c = !*c)
-                }>{if expanded() { "-" } else { "+" }}</button>
-            }
-        });
-        view! { <h4>{title}{and_n_files}</h4> }
+        view! {
+            <span class="title" prop:title=title>
+                {title.clone()}
+            </span>
+        }
     };
-    let sub_file_list = move || {
-        Some(task.filenames.get())
-            .take_if(|fns| fns.len() > 1)
-            .into_iter()
-            .flatten()
-            .map(|f| view! { <li>{f}</li> })
-            .collect::<Vec<_>>()
+    let more_files = move || {
+        let n = task.filenames.read().len();
+        Some(view! {
+            <details>
+                <summary>Total {n}files</summary>
+                <ol>
+                    <For
+                        each=move || task.filenames.get().into_iter()
+                        key=|f| f.clone()
+                        children=move |f| view! { <li title=f>{f.clone()}</li> }
+                    />
+                </ol>
+            </details>
+        })
+        .take_if(|_| n > 1)
     };
+
     let remove_button = move || {
         view! { <button on:click=move |_| set_tasks.write().remove(task.id)>X</button> }
     };
@@ -39,12 +56,16 @@ pub(crate) fn TaskRow(task: Task, set_tasks: WriteSignal<Tasks>) -> impl IntoVie
             class:done=move || task.state.read().is_done()
             class:error=move || task.state.read().is_error()
         >
-            {title}
-            <ul class="files" class:show=move || expanded.get()>
-                {sub_file_list}
-            </ul>
-            {move || Some(remove_button).take_if(|_| !task.state.read().is_working())}
-
+            <span class="state">
+                {move || match *task.state.read() {
+                    TaskState::Pending { .. } => "PENDING",
+                    TaskState::Working => "WORKING",
+                    TaskState::Done { .. } => "READY",
+                    TaskState::Error { .. } => "ERROR",
+                }}
+            </span>
+            <div class="title-line">{title}</div>
+            {move || more_files().map(|m| view! { <div class="more-files">{m}</div> })}
         </li>
     }
 }

@@ -25,6 +25,13 @@ impl Tasks {
         });
     }
 
+    /// Check if any task is done or errored
+    pub(crate) fn any_ended(&self) -> bool {
+        self.0
+            .iter()
+            .any(|task| task.state.with(|state| state.is_done() || state.is_error()))
+    }
+
     pub(crate) fn get_next_pending(&self) -> Option<Task> {
         self.0
             .iter()
