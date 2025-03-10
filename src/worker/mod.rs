@@ -1,25 +1,20 @@
 mod subtitle;
 mod zip;
 
-use chardet::charset2encoding;
-use encoding::{
-    label::encoding_from_whatwg_label,
-    types::{DecoderTrap, EncoderTrap, EncodingRef},
-};
+use chardetng::EncodingDetector;
+use encoding_rs::Encoding;
+use gloo_net::http::Request;
 use js_sys::{Array, Uint8Array};
 use serde::Deserialize;
 use simplecc::Dict;
 use std::{borrow::Cow, io::Cursor};
 use wasm_bindgen::prelude::*;
-use web_sys::{Blob, BlobPropertyBag, FileReaderSync, console};
+use web_sys::{Blob, BlobPropertyBag, FileReaderSync};
 
-use crate::{TaskRequest, TaskResult};
+use crate::{Options, TaskRequest, TaskResult};
 
 const MIME_SRT: &str = "text/srt";
 const MIME_ZIP: &str = "application/zip";
-
-#[derive(Deserialize, Debug, Clone)]
-struct Charset(String);
 
 #[derive(Deserialize, Debug, Clone)]
 enum Lines {
@@ -28,50 +23,26 @@ enum Lines {
     All,
 }
 
-#[derive(Deserialize, Debug, Clone, Copy)]
-struct IgnoreCodecErr(bool);
-
-#[derive(Deserialize, Debug, Clone)]
-struct Options {
-    in_charset: Option<Charset>,
-    out_charset: Option<Charset>,
-    lines: Lines,
-    ignore_codec_err: IgnoreCodecErr,
-    conv_dict: Option<String>,
-    offset_secs: f32,
-}
-
 type StrError = Cow<'static, str>;
 
-impl TryFrom<Charset> for EncodingRef {
-    type Error = StrError;
-    fn try_from(value: Charset) -> Result<Self, Self::Error> {
-        encoding_from_whatwg_label(&value.0).ok_or_else(|| "unknown charset name".into())
-    }
+async fn fetch_simplecc_dict(name: &str) -> Result<Dict, StrError> {
+    let text = Request::get(name)
+        .send()
+        .await
+        .map_err(|e| Cow::Owned(format!("failed to fetch dict: {:?}", e)))?
+        .text()
+        .await
+        .map_err(|e| Cow::Owned(format!("failed to fetch dict: {:?}", e)))?;
+    Ok(Dict::load_str(text))
 }
 
-impl From<IgnoreCodecErr> for EncoderTrap {
-    fn from(val: IgnoreCodecErr) -> Self {
-        if val.0 { Self::Replace } else { Self::Strict }
-    }
-}
+pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String> {
+    // load simpecc dict
+    let dict = match task.options.chinese_convertion.dict_name() {
+        Some(name) => Some(fetch_simplecc_dict(name).await?),
+        None => None,
+    };
 
-impl From<IgnoreCodecErr> for DecoderTrap {
-    fn from(val: IgnoreCodecErr) -> Self {
-        if val.0 { Self::Replace } else { Self::Strict }
-    }
-}
-
-fn detect_charset(mut s: &[u8]) -> Option<EncodingRef> {
-    if s.len() > 4096 {
-        s = &s[..4096];
-    }
-    let result = chardet::detect(s);
-    console::log_1(&format!("chardet {:?}", result).into());
-    encoding_from_whatwg_label(charset2encoding(&result.0))
-}
-
-pub fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String> {
     let reader = FileReaderSync::new().unwrap();
     // TODO: check & limit input file size
     let (content, mime) = if task.files.len() <= 1 {
@@ -83,7 +54,7 @@ pub fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String> {
             Uint8Array::new(&array).copy_to(&mut buf);
             buf
         };
-        let output = convert_single_file(&input_buf, &task.options)?;
+        let output = convert_single_file(&input_buf, &task.options, &dict)?;
         (output, MIME_SRT)
     } else {
         // mulpitle files, with zip
@@ -101,7 +72,7 @@ pub fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String> {
             let file = file.expect("failed to open file");
             input_buf.resize(file.length().try_into().unwrap(), 0);
             file.copy_to(&mut input_buf);
-            let output = convert_single_file(&input_buf, &task.options)?;
+            let output = convert_single_file(&input_buf, &task.options, &dict)?;
             zip.write_file(&name, output.as_ref()).unwrap();
         }
         zip.close().unwrap();
@@ -112,43 +83,66 @@ pub fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String> {
     })
 }
 
-fn convert_single_file(input: &[u8], opts: &crate::Options) -> Result<Box<[u8]>, StrError> {
-    //todo!()
-    Ok(vec![0u8; 0].into_boxed_slice())
+fn detect_encoding(input: &[u8]) -> Option<&'static Encoding> {
+    let mut detector = EncodingDetector::new();
+    for chunk in input.chunks(256) {
+        if detector.feed(chunk, false) {
+            let (encoding, sure) = detector.guess_assess(None, true);
+            if sure {
+                return Some(encoding);
+            }
+        }
+    }
+    detector.feed(&[], true);
+    let (encoding, sure) = detector.guess_assess(None, true);
+    Some(encoding).take_if(|_| sure)
 }
 
-fn convert(ass: Uint8Array, opts: Options) -> Result<Box<[u8]>, StrError> {
-    let ass = ass.to_vec();
-    let in_charset = if let Some(charset) = opts.in_charset {
-        charset.try_into()?
+fn convert_single_file(
+    input: &[u8],
+    opts: &Options,
+    dict: &Option<Dict>,
+) -> Result<Box<[u8]>, StrError> {
+    // set encodings
+    let ass_charset = if opts.ass_charset.is_empty() {
+        detect_encoding(input).ok_or(Cow::Borrowed("failed to detect encoding"))?
     } else {
-        detect_charset(&ass).ok_or(Cow::Borrowed("fail to detect ASS charset"))?
+        Encoding::for_label(opts.ass_charset.as_bytes())
+            .ok_or(Cow::Borrowed("unknown input encoding"))?
     };
-    let out_charset = opts.out_charset.map_or(Ok(in_charset), |l| l.try_into())?;
-    let dict: Option<Dict> = opts.conv_dict.map(|s| Dict::load_str(&s));
-    let lines = opts.lines;
-    let mapper = |s: String| {
-        match lines {
-            Lines::First => s.lines().next(),
-            Lines::Last => s.lines().last(),
-            Lines::All => Some(s.as_str()),
+    let srt_charset = if opts.srt_charset.is_empty() {
+        ass_charset
+    } else {
+        Encoding::for_label(opts.srt_charset.as_bytes())
+            .ok_or(Cow::Borrowed("unknown output encoding"))?
+    };
+
+    // set text map (for line strip & chinese convertion)
+    let text_map = for<'a> |text: Cow<'a, str>| -> Cow<'a, str> {
+        let text = opts.line_strip.strip(text);
+        if let Some(dict) = dict {
+            Cow::Owned(dict.replace_all(&text))
+        } else {
+            text
         }
-        .map(|s| dict.as_ref().map_or(s.into(), |d| d.replace_all(s)))
     };
 
-    let ass = in_charset.decode(&ass, opts.ignore_codec_err.into())?;
-    let srt = subtitle::ass_to_srt(&ass, true, Some(mapper), opts.offset_secs)?;
-
-    let mut output = Vec::new();
-    // insert BOM for utf-16
-    if out_charset
-        .whatwg_name()
-        .is_some_and(|n| n.starts_with("utf-16"))
-    {
-        out_charset.encode_to("\u{feff}", EncoderTrap::Strict, &mut output)?;
+    // decode & convert
+    let (ass, _, has_error) = ass_charset.decode(&input);
+    if has_error && !opts.ignore_charset_error {
+        return Err(Cow::Borrowed("decoding error"));
     }
-    out_charset.encode_to(&srt, opts.ignore_codec_err.into(), &mut output)?;
-    Ok(output.into_boxed_slice())
+    let srt = subtitle::ass_to_srt(&ass, true, Some(text_map), opts.offset_secs)?;
+
+    // encode
+    // TODO: insert BOM for utf-16
+    let (output, _, has_error) = srt_charset.encode(&srt);
+    if has_error && !opts.ignore_charset_error {
+        return Err(Cow::Borrowed("decoding error"));
+    }
+
+    // TODO: remove clone for utf-8 output
+    Ok(output.into_owned().into_boxed_slice())
 }
 
 fn create_blob<T: AsRef<[u8]>>(buf: T, mime: &str) -> Result<Blob, JsValue> {
@@ -157,35 +151,4 @@ fn create_blob<T: AsRef<[u8]>>(buf: T, mime: &str) -> Result<Blob, JsValue> {
     let blob_parts = Array::new();
     blob_parts.push(&Uint8Array::from(buf.as_ref()));
     Blob::new_with_u8_array_sequence_and_options(&blob_parts, &blob_opts)
-}
-
-#[wasm_bindgen(js_name = assToSrt)]
-pub fn ass_to_srt(ass: Uint8Array, opts: JsValue) -> Result<Blob, JsValue> {
-    let opts = serde_wasm_bindgen::from_value(opts).unwrap();
-    let output = convert(ass, opts).map_err(|err| JsValue::from_str(&err))?;
-    create_blob(output, "text/srt")
-}
-
-#[wasm_bindgen(js_name = assToSrtBulk)]
-pub fn ass_to_srt_bulk(
-    files: Vec<Uint8Array>,
-    filenames: Vec<String>,
-    opts: JsValue,
-) -> Result<Blob, JsValue> {
-    let opts: Options = serde_wasm_bindgen::from_value(opts).unwrap();
-    let mut buf = Cursor::new(Vec::new());
-    {
-        let mut zip = zip::ZipWriter::new(&mut buf);
-        let fname_srt = filenames
-            .into_iter()
-            .zip(files.into_iter().map(|f| convert(f, opts.clone())));
-        for (fname, srt) in fname_srt {
-            let srt = srt.map_err(|err| JsValue::from_str(&err))?;
-            zip.write_file(&fname, srt.as_ref())
-                .map_err(|_| JsValue::from_str("zip write error"))?;
-        }
-        zip.close()
-            .map_err(|_| JsValue::from_str("zip close error"))?;
-    }
-    create_blob(buf.get_ref(), "application/zip")
 }

@@ -35,7 +35,7 @@ Something...\r\n\r\n\
 3\r\n\
 00:04:01,000 --> 00:04:02,000\r\n\
 sometext\r\n\r\n";
-    let conv = |s| Some(s);
+    let conv = |s| s;
     let result = ass_to_srt(ASS_SAMPLE, true, Some(conv), 0.0).unwrap();
     assert_eq!(result, srt);
 }
@@ -44,7 +44,7 @@ sometext\r\n\r\n";
 fn test_ass_line_ending() {
     let crlf = ASS_SAMPLE.replace('\n', "\r\n");
     let lf = ASS_SAMPLE.replace('\n', "\r");
-    let conv = |s| Some(s);
+    let conv = |s| s;
     assert!(ass_to_srt(&crlf, true, Some(conv), 0.0).is_ok());
     assert!(ass_to_srt(&lf, true, Some(conv), 0.0).is_ok());
 }

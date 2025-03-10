@@ -23,7 +23,10 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
                     id="in-charset"
                     list="charsets"
                     placeholder="Auto detect"
-                    bind:value=options.ass_charset()
+                    prop:value=move || options.ass_charset().read().clone()
+                    on:change:target=move |ev| {
+                        *options.ass_charset().write() = ev.target().value().trim().to_string();
+                    }
                 />
             </label>
         </p>

@@ -129,14 +129,14 @@ impl Centisec {
     }
 }
 
-pub fn ass_to_srt<F>(
-    ass: &str,
+pub fn ass_to_srt<'a: 'b, 'b, F>(
+    ass: &'a str,
     no_effect: bool,
     mut mapper: Option<F>,
     offset_secs: f32,
 ) -> Result<String, &'static str>
 where
-    F: FnMut(String) -> Option<String>,
+    F: FnMut(Cow<'b, str>) -> Cow<'b, str>,
 {
     // find lines within [Events]
     let mut events = UniversalLines::new(ass)
@@ -169,7 +169,7 @@ where
             d.start.add_secs(offset_secs);
             d.end.add_secs(offset_secs);
             if let Some(ref mut f) = mapper {
-                d.text = f(d.text.into())?.into();
+                d.text = f(d.text);
             }
             Some(d)
         })

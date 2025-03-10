@@ -1,6 +1,8 @@
-use asstosrt_wasm::{TaskRequest, WorkerMessage, worker::do_conversion_task};
 use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::spawn_local;
 use web_sys::{DedicatedWorkerGlobalScope, MessageEvent};
+
+use asstosrt_wasm::{TaskRequest, WorkerMessage, worker::do_conversion_task};
 
 fn main() {
     console_error_panic_hook::set_once();
@@ -17,9 +19,12 @@ fn main() {
                 return;
             }
         };
-        let result = do_conversion_task(request);
-        let result = serde_wasm_bindgen::to_value(&WorkerMessage::TaskDone(result)).unwrap();
-        scope_.post_message(&result).unwrap();
+        let scope = scope_.clone();
+        spawn_local(async move {
+            let result = do_conversion_task(request).await;
+            let result = serde_wasm_bindgen::to_value(&WorkerMessage::TaskDone(result)).unwrap();
+            scope.post_message(&result).unwrap();
+        });
     });
     scope.set_onmessage(Some(on_message.as_ref().unchecked_ref()));
     let ready = serde_wasm_bindgen::to_value(&WorkerMessage::WorkerReady).unwrap();
