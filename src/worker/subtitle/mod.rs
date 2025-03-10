@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use lines::UniversalLines;
-use regex::Regex;
+use regex_lite::Regex;
 use std::{borrow::Cow, cmp::Ordering, collections::HashMap, fmt, str::FromStr};
 
 mod lines;
