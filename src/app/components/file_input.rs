@@ -3,7 +3,6 @@ use web_sys::File;
 
 #[component]
 pub(crate) fn FileInput(#[prop(into)] on_files: UnsyncCallback<(Vec<File>,), ()>) -> impl IntoView {
-    let on_drop_files = on_files.clone();
     view! {
         <div
             class="drop-zone"
@@ -18,7 +17,7 @@ pub(crate) fn FileInput(#[prop(into)] on_files: UnsyncCallback<(Vec<File>,), ()>
                         .filter_map(|item| item.get_as_file().transpose())
                         .collect();
                     match files {
-                        Ok(files) => on_drop_files.run((files,)),
+                        Ok(files) => on_files.run((files,)),
                         Err(err) => log::warn!("failed to get input files: {:?}", err),
                     }
                 }

@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use reactive_stores::Store;
 use serde::{Deserialize, Serialize};
 use strum::{EnumString, IntoStaticStr};
-use web_sys::{Blob, File};
+use web_sys::File;
 
 pub mod app;
 pub mod worker;
@@ -57,7 +57,7 @@ impl IntoAttributeValue for LineStrip {
 }
 
 impl LineStrip {
-    fn strip<'a, 'b>(&'a self, text: Cow<'b, str>) -> Cow<'b, str> {
+    fn strip<'a>(&self, text: Cow<'a, str>) -> Cow<'a, str> {
         match (self, text) {
             (Self::KeepAll, text) => text,
             (Self::KeepFirst, Cow::Borrowed(text)) => {
@@ -95,8 +95,7 @@ pub enum WorkerMessage {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskResult {
-    #[serde(with = "serde_wasm_bindgen::preserve")]
-    file_blob: Blob,
+    file_url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

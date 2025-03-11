@@ -18,7 +18,7 @@ pub fn Home() -> impl IntoView {
     let converter: Converter = use_context().expect("converter not found");
 
     let convert = Action::new_local(move |task: &Task| {
-        let task = task.clone();
+        let task = *task;
         let files = task.set_working().unwrap();
         let options = options.read_untracked().clone();
         let converter = converter.clone();

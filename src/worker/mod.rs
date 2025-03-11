@@ -9,7 +9,7 @@ use serde::Deserialize;
 use simplecc::Dict;
 use std::{borrow::Cow, io::Cursor};
 use wasm_bindgen::prelude::*;
-use web_sys::{Blob, BlobPropertyBag, FileReaderSync};
+use web_sys::{Blob, BlobPropertyBag, FileReaderSync, Url};
 
 use crate::{Options, TaskRequest, TaskResult};
 
@@ -78,9 +78,10 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String>
         zip.close().unwrap();
         (output_buf.into_inner().into_boxed_slice(), MIME_ZIP)
     };
-    Ok(TaskResult {
-        file_blob: create_blob(&content, mime).unwrap(),
-    })
+    // create blob url
+    let file_blob = create_blob(&content, mime).unwrap();
+    let file_url = Url::create_object_url_with_blob(&file_blob).unwrap();
+    Ok(TaskResult { file_url })
 }
 
 fn detect_encoding(input: &[u8]) -> Option<&'static Encoding> {
@@ -128,7 +129,7 @@ fn convert_single_file(
     };
 
     // decode & convert
-    let (ass, _, has_error) = ass_charset.decode(&input);
+    let (ass, _, has_error) = ass_charset.decode(input);
     if has_error && !opts.ignore_charset_error {
         return Err(Cow::Borrowed("decoding error"));
     }

@@ -2,9 +2,11 @@ use futures::channel::oneshot::{Receiver, channel};
 use send_wrapper::SendWrapper;
 use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
-use web_sys::{Blob, File, MessageEvent, Worker, WorkerOptions, WorkerType};
+use web_sys::{File, MessageEvent, Worker, WorkerOptions, WorkerType};
 
 use crate::{FileWrap, Options, TaskRequest, WorkerMessage};
+
+use super::task::BlobUrl;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Converter {
@@ -38,7 +40,11 @@ impl Converter {
         }
     }
 
-    pub(crate) async fn convert(&self, options: Options, files: Vec<File>) -> Result<Blob, String> {
+    pub(crate) async fn convert(
+        &self,
+        options: Options,
+        files: Vec<File>,
+    ) -> Result<BlobUrl, String> {
         // wait for worker ready
         if let Some(ready) = self.ready.lock().unwrap().take() {
             log::debug!("wait for worker ready");
@@ -67,6 +73,6 @@ impl Converter {
             .post_message(&serde_wasm_bindgen::to_value(&request).unwrap())
             .unwrap();
         // wait response
-        result_rx.await.unwrap().map(|r| r.file_blob)
+        result_rx.await.unwrap().map(|r| BlobUrl::new(r.file_url))
     }
 }

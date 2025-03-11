@@ -1,9 +1,9 @@
-use std::mem;
+use std::{fmt::Display, mem, sync::Arc};
 
 use leptos::prelude::*;
 use strum::EnumIs;
 use uuid::Uuid;
-use web_sys::{Blob, File};
+use web_sys::{File, Url};
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Tasks(pub(crate) Vec<Task>);
@@ -61,7 +61,7 @@ pub(crate) struct Task {
 pub(crate) enum TaskState {
     Pending { files: Vec<File> },
     Working,
-    Done { file: Blob },
+    Done { file: Arc<BlobUrl> },
     Error { message: String },
 }
 
@@ -86,11 +86,61 @@ impl Task {
         ret
     }
 
-    pub(crate) fn set_done(&self, file: Blob) {
-        self.state.set(TaskState::Done { file });
+    pub(crate) fn set_done(&self, file: BlobUrl) {
+        self.state.set(TaskState::Done { file: file.into() });
     }
 
     pub(crate) fn set_error(&self, message: String) {
         self.state.set(TaskState::Error { message })
+    }
+
+    pub(crate) fn output_filename(&self) -> String {
+        let filenames = self.filenames.read();
+        let name1 = filenames.first().and_then(|n| n.strip_suffix(".ass"));
+        let name2 = filenames.last().and_then(|n| n.strip_suffix(".ass"));
+        match (name1, name2) {
+            // zip file
+            (Some(name1), Some(name2)) if name1 != name2 => {
+                let common: String = name1
+                    .chars()
+                    .zip(name2.chars())
+                    .take_while(|(c1, c2)| c1 == c2)
+                    .map(|(c, _)| c)
+                    .collect();
+                if common.is_empty() {
+                    format!("ass2srt-{}.zip", self.id)
+                } else {
+                    format!("{}.zip", common)
+                }
+            }
+            // srt file (w/o zip)
+            (Some(name), _) => format!("{}.srt", name),
+            // unreachable (if no bug)
+            _ => format!("ass2srt-{}.srt", self.id),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct BlobUrl(String);
+
+impl Drop for BlobUrl {
+    fn drop(&mut self) {
+        log::debug!("revoking blob url {}", self.0);
+        if let Err(err) = Url::revoke_object_url(&self.0) {
+            log::warn!("failed to revoke blob url {:?}", err);
+        }
+    }
+}
+
+impl BlobUrl {
+    pub(crate) fn new(url: String) -> Self {
+        Self(url)
+    }
+}
+
+impl Display for BlobUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
     }
 }

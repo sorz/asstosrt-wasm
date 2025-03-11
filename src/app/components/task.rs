@@ -19,6 +19,18 @@ pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) 
 
 #[component]
 fn TaskItem(task: Task, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
+    let state_label = move || {
+        view! {
+            <span class="state">
+                {move || match *task.state.read() {
+                    TaskState::Pending { .. } => "⌛PENDING",
+                    TaskState::Working => "🟢WORKING",
+                    TaskState::Done { .. } => "🎉READY",
+                    TaskState::Error { .. } => "⚠️ERROR",
+                }}
+            </span>
+        }
+    };
     let title = move || {
         let fns = task.filenames.get();
         let title = fns.into_iter().next().expect("empty file list");
@@ -44,6 +56,21 @@ fn TaskItem(task: Task, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
         })
         .take_if(|_| n > 1)
     };
+    let download_link = move || {
+        view! {
+            <a
+                class="download"
+                href=move || match task.state.get() {
+                    TaskState::Done { file } => Some(file.to_string()),
+                    _ => None,
+                }
+                prop:download=move || task.output_filename()
+                prop:title=move || task.output_filename()
+            >
+                "💾"
+            </a>
+        }
+    };
 
     let remove_button = move || {
         view! { <button on:click=move |_| set_tasks.write().remove(task.id)>X</button> }
@@ -56,15 +83,10 @@ fn TaskItem(task: Task, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
             class:done=move || task.state.read().is_done()
             class:error=move || task.state.read().is_error()
         >
-            <span class="state">
-                {move || match *task.state.read() {
-                    TaskState::Pending { .. } => "PENDING",
-                    TaskState::Working => "WORKING",
-                    TaskState::Done { .. } => "READY",
-                    TaskState::Error { .. } => "ERROR",
-                }}
-            </span>
-            <div class="title-line">{title}</div>
+            <div class="columns">
+                <div class="state-and-title">{state_label}{title}</div>
+                {move || Some(download_link).take_if(|_| task.state.read().is_done())}
+            </div>
             {move || more_files().map(|m| view! { <div class="more-files">{m}</div> })}
         </li>
     }

@@ -107,6 +107,17 @@ form#options {
     }
   }
 
+  .columns {
+    display: flex;
+    flex-direction: row;
+
+    .state-and-title {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
   .state {
     align-self: flex-start;
     font-size: var(--font-size-1);
@@ -114,16 +125,28 @@ form#options {
     font-weight: var(--font-weight-4);
   }
 
-  .title-line {
-    display: flex;
-    flex-direction: row;
+  .title {
+    flex: 1;
+    font-size: var(--font-size-3);
+    text-align: start;
+    line-break: anywhere;
+  }
 
-    .title {
-      flex: 1;
-      font-size: var(--font-size-3);
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      overflow: hidden;
+  a.download {
+    align-self: center;
+    font-size: var(--font-size-5);
+    margin-left: var(--size-fluid-1);
+    margin-right: -6px;
+
+    &:hover {
+      text-decoration: none;
+    }
+
+    @media (prefers-color-scheme: light) {
+      &:hover { text-shadow: var(--lime-6) 0 0 10px; }
+    }
+    @media (prefers-color-scheme: dark) {
+      &:hover { text-shadow: var(--teal-8) 0 0 10px; }
     }
   }
 
