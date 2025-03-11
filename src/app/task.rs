@@ -21,7 +21,7 @@ impl Tasks {
     pub(crate) fn clear_ended(&mut self) {
         self.retain(|task| {
             let state = task.state.read();
-            state.is_done() || state.is_error()
+            state.is_pending() || state.is_working()
         });
     }
 

@@ -4,21 +4,30 @@ use crate::app::task::{Task, TaskState, Tasks};
 
 #[component]
 pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
+    let clear_button = move || {
+        view! {
+            <button class="clear" on:click=move |_| set_tasks.write().clear_ended()>
+                "CLEAR ALL"
+            </button>
+        }
+    };
     view! {
         <ul class="task-list">
             <For
                 each=move || tasks.get().0.into_iter().rev()
                 key=|task| task.id
-                children=move |task| {
-                    view! { <TaskItem task set_tasks /> }
-                }
+                children=move |task| view! { <TaskItem task /> }
             />
+            {move || {
+                Some(move || view! { <li class="actions">{clear_button()}</li> })
+                    .take_if(|_| tasks.get().any_ended())
+            }}
         </ul>
     }
 }
 
 #[component]
-fn TaskItem(task: Task, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
+fn TaskItem(task: Task) -> impl IntoView {
     let state_label = move || {
         view! {
             <span class="state">
@@ -71,13 +80,9 @@ fn TaskItem(task: Task, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
             </a>
         }
     };
-
-    let remove_button = move || {
-        view! { <button on:click=move |_| set_tasks.write().remove(task.id)>X</button> }
-    };
-
     view! {
         <li
+            class="task"
             class:pending=move || task.state.read().is_pending()
             class:working=move || task.state.read().is_working()
             class:done=move || task.state.read().is_done()

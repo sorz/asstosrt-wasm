@@ -80,12 +80,15 @@ form#options {
   padding: 0;
 
   > li {
+    max-inline-size: var(--size-content-3);
+    inline-size: var(--size-content-3);
+  }
+
+  > li.task {
     display: flex;
     flex-direction: column;
     align-items: stretch;
 
-    max-inline-size: var(--size-content-3);
-    inline-size: var(--size-content-3);
     box-shadow: var(--shadow-1);
     border-radius: var(--radius-2);
     padding: var(--size-fluid-2);
@@ -107,6 +110,19 @@ form#options {
     }
   }
 
+  button.clear {
+    font-size: var(--font-size-1);
+    font-weight: var(--font-weight-4);
+    opacity: 0.8;
+    background: none;
+    border: none;
+    box-shadow: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   .columns {
     display: flex;
     flex-direction: row;
@@ -123,6 +139,7 @@ form#options {
     font-size: var(--font-size-1);
     opacity: 0.6;
     font-weight: var(--font-weight-4);
+    user-select: none;
   }
 
   .title {
@@ -137,6 +154,7 @@ form#options {
     font-size: var(--font-size-5);
     margin-left: var(--size-fluid-1);
     margin-right: -6px;
+    user-select: none;
 
     &:hover {
       text-decoration: none;
@@ -177,6 +195,5 @@ form#options {
       white-space: nowrap;
       overflow: hidden;
     }
-
   }
 }
