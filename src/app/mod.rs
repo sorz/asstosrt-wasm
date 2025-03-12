@@ -1,4 +1,6 @@
+leptos_i18n::load_locales!();
 use converter::Converter;
+use i18n::I18nContextProvider;
 use leptos::prelude::*;
 use leptos_meta::*;
 use leptos_router::{components::*, path};
@@ -18,14 +20,15 @@ pub fn App() -> impl IntoView {
         provide_context(Converter::new());
     }
     view! {
-        <Html attr:lang="en" attr:dir="ltr" attr:data-theme="light" />
-        <Title text="ASS/SSA to SRT Subtitles Converter" />
-        <Meta charset="UTF-8" />
-        <Meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <Router>
-            <Routes fallback=NotFound>
-                <Route path=path!("/") view=Home />
-            </Routes>
-        </Router>
+        <I18nContextProvider>
+            <Html />
+            <Meta charset="UTF-8" />
+            <Meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <Router>
+                <Routes fallback=NotFound>
+                    <Route path=path!("/") view=Home />
+                </Routes>
+            </Router>
+        </I18nContextProvider>
     }
 }

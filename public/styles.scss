@@ -37,9 +37,33 @@ h6 {
   padding: 2rem;
 }
 
+h1 {
+  font-size: var(--font-size-7);
+  padding-top: 0;
+}
+
 footer {
   opacity: 0.5;
   margin-top: 2rem;
+}
+
+ul.toggle-bar {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  align-self: flex-end;
+  margin: var(--size-fluid-2);
+
+  button {
+    font-size: var(--font-size-0);
+    padding: 0;
+    width: 2rem;
+    height: 1.5rem;
+
+    &:disabled {
+      cursor: default;
+    }
+  }
 }
 
 .drop-zone {

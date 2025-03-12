@@ -1,11 +1,14 @@
 use leptos::prelude::*;
+use leptos_i18n::t;
+use leptos_meta::Title;
 use reactive_stores::Store;
 
 use crate::{
     Options,
     app::{
-        components::{FileInput, OptionsForm, TaskList},
+        components::{FileInput, OptionsForm, TaskList, ToggleBar},
         converter::Converter,
+        i18n::use_i18n,
         task::{Task, Tasks},
     },
 };
@@ -13,6 +16,7 @@ use crate::{
 /// Default Home Page
 #[component]
 pub fn Home() -> impl IntoView {
+    let i18n = use_i18n();
     let options = Store::new(Options::default());
     let (tasks, set_tasks) = signal(Tasks::default());
     let converter: Converter = use_context().expect("converter not found");
@@ -37,14 +41,16 @@ pub fn Home() -> impl IntoView {
     });
 
     view! {
+        <Title text=move || i18n.get_locale().get_keys_const().html_title().inner() />
         <div class="container">
+            <ToggleBar />
             <h1>
                 <abbr title="Advanced SubStation Alpha">ASS</abbr>
                 /
                 <abbr title="SubStation Alpha">SSA</abbr>
-                to
+                {t!(i18n, title_to)}
                 <abbr title="SubRip">SRT</abbr>
-                Subtitles Converter
+                {t!(i18n, title_converter)}
             </h1>
 
             <ErrorBoundary fallback=|errors| {
