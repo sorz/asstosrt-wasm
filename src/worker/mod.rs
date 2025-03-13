@@ -7,7 +7,7 @@ use gloo_net::http::Request;
 use js_sys::{Array, Uint8Array};
 use serde::{Deserialize, Serialize};
 use simplecc::Dict;
-use std::{borrow::Cow, io::Cursor, usize};
+use std::{borrow::Cow, collections::HashSet, io::Cursor, ops::AddAssign, usize};
 use subtitle::FormatError;
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
@@ -19,7 +19,7 @@ const FILE_SIZE_LIMIT: usize = 200 * 1024 * 1024;
 const MIME_SRT: &str = "text/srt";
 const MIME_ZIP: &str = "application/zip";
 
-#[derive(Error, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Error, Debug, Clone, Serialize, Deserialize)]
 pub enum ConvertError {
     #[error("empty file list")]
     NoFile,
@@ -67,6 +67,23 @@ impl From<gloo_net::Error> for ConvertError {
     }
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub(crate) struct ConvertMeta {
+    pub(crate) input_encoding: HashSet<String>,
+    pub(crate) output_encoding: HashSet<String>,
+    pub(crate) decode_error: bool,
+    pub(crate) encode_error: bool,
+}
+
+impl AddAssign for ConvertMeta {
+    fn add_assign(&mut self, rhs: Self) {
+        self.input_encoding.extend(rhs.input_encoding);
+        self.output_encoding.extend(rhs.output_encoding);
+        self.decode_error |= rhs.decode_error;
+        self.encode_error |= rhs.encode_error;
+    }
+}
+
 async fn fetch_opencc_dict(name: &str) -> Result<Dict, gloo_net::Error> {
     let text = Request::get(name).send().await?.text().await?;
     Ok(Dict::load_str(text))
@@ -90,7 +107,7 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
 
     let reader = FileReaderSync::new()?;
     // TODO: check & limit input file size
-    let (content, mime) = if task.files.len() <= 1 {
+    let (content, meta, mime) = if task.files.len() <= 1 {
         // single file, no zip
         let input_buf = {
             let file = &task.files.first().ok_or(ConvertError::NoFile)?.0;
@@ -100,8 +117,8 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
             Uint8Array::new(&array).copy_to(&mut buf);
             buf
         };
-        let output = convert_single_file(&input_buf, &task.options, &dict)?;
-        (output, MIME_SRT)
+        let (output, meta) = convert_single_file(&input_buf, &task.options, &dict)?;
+        (output, meta, MIME_SRT)
     } else {
         // check file size
         for FileWrap(file) in task.files.iter() {
@@ -118,20 +135,22 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
         let mut input_buf = vec![0u8; 0];
         let mut output_buf = Cursor::new(Vec::new());
         let mut zip = zip::ZipWriter::new(&mut output_buf);
+        let mut meta = ConvertMeta::default();
         for (name, file) in files {
             let file = file.expect("failed to open file");
             input_buf.resize(file.length().try_into().unwrap(), 0);
             file.copy_to(&mut input_buf);
-            let output = convert_single_file(&input_buf, &task.options, &dict)?;
+            let (output, meta_) = convert_single_file(&input_buf, &task.options, &dict)?;
+            meta += meta_;
             zip.write_file(&name, output.as_ref()).unwrap();
         }
         zip.close().unwrap();
-        (output_buf.into_inner().into_boxed_slice(), MIME_ZIP)
+        (output_buf.into_inner().into_boxed_slice(), meta, MIME_ZIP)
     };
     // create blob url
     let file_blob = create_blob(&content, mime)?;
     let file_url = Url::create_object_url_with_blob(&file_blob)?;
-    Ok(TaskResult { file_url })
+    Ok(TaskResult { file_url, meta })
 }
 
 fn detect_encoding(input: &[u8]) -> Option<&'static Encoding> {
@@ -153,7 +172,8 @@ fn convert_single_file(
     input: &[u8],
     opts: &Options,
     dict: &Option<Dict>,
-) -> Result<Box<[u8]>, ConvertError> {
+) -> Result<(Box<[u8]>, ConvertMeta), ConvertError> {
+    let mut meta = ConvertMeta::default();
     // set encodings
     let ass_charset = if opts.ass_charset.is_empty() {
         detect_encoding(input).ok_or(ConvertError::EncodingDetect)?
@@ -179,21 +199,19 @@ fn convert_single_file(
     };
 
     // decode & convert
-    let (ass, _, has_error) = ass_charset.decode(input);
-    if has_error && !opts.ignore_charset_error {
-        // TODO: set decode warning
-    }
+    let (ass, ass_charset, has_error) = ass_charset.decode(input);
+    meta.input_encoding.insert(ass_charset.name().to_string());
+    meta.decode_error = has_error;
     let srt = subtitle::ass_to_srt(&ass, true, Some(text_map), opts.offset_secs)?;
 
     // encode
     // TODO: insert BOM for utf-16
-    let (output, _, has_error) = srt_charset.encode(&srt);
-    if has_error && !opts.ignore_charset_error {
-        // TODO: set encoding warning
-    }
+    let (output, srt_charset, has_error) = srt_charset.encode(&srt);
+    meta.output_encoding.insert(srt_charset.name().to_string());
+    meta.encode_error = has_error;
 
     // TODO: remove clone for utf-8 output
-    Ok(output.into_owned().into_boxed_slice())
+    Ok((output.into_owned().into_boxed_slice(), meta))
 }
 
 fn create_blob<T: AsRef<[u8]>>(buf: T, mime: &str) -> Result<Blob, JsValue> {

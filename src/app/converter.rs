@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use wasm_bindgen::prelude::*;
 use web_sys::{File, MessageEvent, Worker, WorkerOptions, WorkerType};
 
-use crate::{FileWrap, Options, TaskRequest, WorkerMessage, worker::ConvertError};
+use crate::{ConvertMeta, FileWrap, Options, TaskRequest, WorkerMessage, worker::ConvertError};
 
 use super::task::BlobUrl;
 
@@ -44,7 +44,7 @@ impl Converter {
         &self,
         options: Options,
         files: Vec<File>,
-    ) -> Result<BlobUrl, ConvertError> {
+    ) -> Result<(BlobUrl, ConvertMeta), ConvertError> {
         // wait for worker ready
         if let Some(ready) = self.ready.lock().unwrap().take() {
             log::debug!("wait for worker ready");
@@ -73,6 +73,9 @@ impl Converter {
             .post_message(&serde_wasm_bindgen::to_value(&request).unwrap())
             .unwrap();
         // wait response
-        result_rx.await.unwrap().map(|r| BlobUrl::new(r.file_url))
+        result_rx
+            .await
+            .unwrap()
+            .map(|r| (BlobUrl::new(r.file_url), r.meta))
     }
 }

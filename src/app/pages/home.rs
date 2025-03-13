@@ -28,7 +28,7 @@ pub fn Home() -> impl IntoView {
         let converter = converter.clone();
         async move {
             match converter.convert(options, files).await {
-                Ok(file) => task.set_done(file),
+                Ok((file, meta)) => task.set_done(file, meta),
                 Err(msg) => task.set_error(msg),
             }
         }

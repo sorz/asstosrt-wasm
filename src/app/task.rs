@@ -5,7 +5,7 @@ use strum::EnumIs;
 use uuid::Uuid;
 use web_sys::{File, Url};
 
-use crate::worker::ConvertError;
+use crate::{ConvertMeta, worker::ConvertError};
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Tasks(pub(crate) Vec<Task>);
@@ -59,12 +59,19 @@ pub(crate) struct Task {
     pub(crate) state: RwSignal<TaskState, LocalStorage>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, EnumIs)]
+#[derive(Debug, Clone, EnumIs)]
 pub(crate) enum TaskState {
-    Pending { files: Vec<File> },
+    Pending {
+        files: Vec<File>,
+    },
     Working,
-    Done { file: Arc<BlobUrl> },
-    Error { error: ConvertError },
+    Done {
+        file: Arc<BlobUrl>,
+        meta: Arc<ConvertMeta>,
+    },
+    Error {
+        error: ConvertError,
+    },
 }
 
 impl Task {
@@ -88,8 +95,11 @@ impl Task {
         ret
     }
 
-    pub(crate) fn set_done(&self, file: BlobUrl) {
-        self.state.set(TaskState::Done { file: file.into() });
+    pub(crate) fn set_done(&self, file: BlobUrl, meta: ConvertMeta) {
+        self.state.set(TaskState::Done {
+            file: file.into(),
+            meta: meta.into(),
+        });
     }
 
     pub(crate) fn set_error(&self, error: ConvertError) {

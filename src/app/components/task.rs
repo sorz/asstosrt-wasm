@@ -70,7 +70,7 @@ fn TaskItem(task: Task) -> impl IntoView {
             <a
                 class="download"
                 href=move || match task.state.get() {
-                    TaskState::Done { file } => Some(file.to_string()),
+                    TaskState::Done { file, .. } => Some(file.to_string()),
                     _ => None,
                 }
                 prop:download=move || task.output_filename()

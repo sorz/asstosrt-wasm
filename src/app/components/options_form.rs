@@ -44,16 +44,6 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
         </p>
         <p>
             <label>
-                Ignore encoding errors
-                <input
-                    type="checkbox"
-                    id="ignore-codec-err"
-                    bind:value=options.ignore_charset_error()
-                />
-            </label>
-        </p>
-        <p>
-            <label>
                 Chinese convert
                 <select
                     id="conv-dict"

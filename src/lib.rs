@@ -6,7 +6,7 @@ use reactive_stores::Store;
 use serde::{Deserialize, Serialize};
 use strum::{EnumString, IntoStaticStr};
 use web_sys::File;
-use worker::ConvertError;
+use worker::{ConvertError, ConvertMeta};
 
 pub mod app;
 pub mod worker;
@@ -81,7 +81,6 @@ impl LineStrip {
 pub struct Options {
     pub ass_charset: String,
     pub srt_charset: String,
-    pub ignore_charset_error: bool,
     pub chinese_convertion: ChineseConvertion,
     pub line_strip: LineStrip,
     pub offset_secs: f32,
@@ -97,6 +96,7 @@ pub enum WorkerMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskResult {
     file_url: String,
+    meta: ConvertMeta,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

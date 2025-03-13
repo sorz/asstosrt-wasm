@@ -10,7 +10,7 @@ mod lines;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, AsRefStr)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, AsRefStr)]
 pub enum Field {
     #[strum(serialize = "start")]
     Start,
@@ -22,7 +22,7 @@ pub enum Field {
     Effect,
 }
 
-#[derive(Error, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Error, Debug, Clone, Serialize, Deserialize)]
 pub enum FormatError {
     #[error("`[Events] => Format` line not found")]
     NoFormatLine,
