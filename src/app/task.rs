@@ -69,9 +69,7 @@ pub(crate) enum TaskState {
         file: Arc<BlobUrl>,
         meta: Arc<ConvertMeta>,
     },
-    Error {
-        error: ConvertError,
-    },
+    Error(ConvertError),
 }
 
 impl Task {
@@ -103,7 +101,7 @@ impl Task {
     }
 
     pub(crate) fn set_error(&self, error: ConvertError) {
-        self.state.set(TaskState::Error { error })
+        self.state.set(TaskState::Error(error))
     }
 
     pub(crate) fn output_filename(&self) -> String {

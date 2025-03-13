@@ -3,14 +3,14 @@ use lines::UniversalLines;
 use regex_lite::Regex;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, cmp::Ordering, collections::HashMap, fmt, str::FromStr};
-use strum::AsRefStr;
+use strum::{AsRefStr, Display};
 use thiserror::Error;
 
 mod lines;
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, AsRefStr)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, AsRefStr, Display)]
 pub enum Field {
     #[strum(serialize = "start")]
     Start,

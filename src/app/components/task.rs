@@ -1,6 +1,15 @@
-use leptos::prelude::*;
+use std::collections::HashSet;
 
-use crate::app::task::{Task, TaskState, Tasks};
+use leptos::prelude::*;
+use leptos_i18n::t;
+
+use crate::{
+    app::{
+        i18n::use_i18n,
+        task::{Task, TaskState, Tasks},
+    },
+    worker::{ConvertError, FormatError},
+};
 
 #[component]
 pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
@@ -28,6 +37,8 @@ pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) 
 
 #[component]
 fn TaskItem(task: Task) -> impl IntoView {
+    let i18n = use_i18n();
+
     let state_label = move || {
         view! {
             <span class="state">
@@ -65,6 +76,64 @@ fn TaskItem(task: Task) -> impl IntoView {
         })
         .take_if(|_| n > 1)
     };
+
+    let error_message = move || match task.state.get() {
+        TaskState::Error(err) => view! {
+            <p class="error">
+                "😢"
+                {match err {
+                    ConvertError::NoFile => unreachable!("UI must not pass empty list"),
+                    ConvertError::TooLarge { size, limit } => {
+                        t!(i18n, error_file_limit, size, limit).into_any()
+                    }
+                    ConvertError::FetchDict(msg) => t!(i18n, error_fetch_dict, msg).into_any(),
+                    ConvertError::EncodingLabel(label) => {
+                        t!(i18n, error_encoding_label, label).into_any()
+                    }
+                    ConvertError::EncodingDetect => t!(i18n, error_encoding_detect).into_any(),
+                    ConvertError::JsError { name, msg } => {
+                        t!(i18n, error_js_error, name, msg).into_any()
+                    }
+                    ConvertError::Format(FormatError::NoFormatLine) => {
+                        t!(i18n, error_format_no_format_line).into_any()
+                    }
+                    ConvertError::Format(FormatError::NoFormatLineField(field)) => {
+                        t!(i18n, error_format_no_format_line_field, field=field.to_string())
+                            .into_any()
+                    }
+                    ConvertError::Format(FormatError::NoField(field)) => {
+                        t!(i18n, error_format_no_field, field=field.to_string()).into_any()
+                    }
+                    ConvertError::Format(FormatError::Time(string)) => {
+                        t!(i18n, error_format_time, string).into_any()
+                    }
+                }}
+            </p>
+        }
+        .into_any(),
+        TaskState::Done { meta, .. } if meta.has_error() => {
+            let meta_ = meta.clone();
+            let input = move || display_encodings(meta_.input_encoding.clone());
+            let meta_ = meta.clone();
+            let output = move || display_encodings(meta_.output_encoding.clone());
+            view! {
+                <p class="error">
+                    "⚠️"
+                    {match (meta.decode_error, meta.encode_error) {
+                        (true, false) => t!(i18n, warning_decoding, input).into_any(),
+                        (false, true) => t!(i18n, warning_encoding, output).into_any(),
+                        (true, true) => {
+                            t!(i18n, warning_decoding_encoding, input, output).into_any()
+                        }
+                        (false, false) => ().into_any(),
+                    }}
+                </p>
+            }
+            .into_any()
+        }
+        TaskState::Done { .. } | TaskState::Pending { .. } | TaskState::Working => ().into_any(),
+    };
+
     let download_link = move || {
         view! {
             <a
@@ -93,6 +162,15 @@ fn TaskItem(task: Task) -> impl IntoView {
                 {move || Some(download_link).take_if(|_| task.state.read().is_done())}
             </div>
             {move || more_files().map(|m| view! { <div class="more-files">{m}</div> })}
+            {error_message}
         </li>
+    }
+}
+
+fn display_encodings(encodings: HashSet<String>) -> String {
+    match encodings.len() {
+        0 => "[]".to_string(),
+        1 => encodings.into_iter().next().unwrap(),
+        _ => format!("[{}]", encodings.into_iter().collect::<Vec<_>>().join(", ")),
     }
 }

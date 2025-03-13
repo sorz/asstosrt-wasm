@@ -1,5 +1,17 @@
 {
   "html_title": "ASS/SSA to SRT Subtitles Converter",
   "title_to": " to ",
-  "title_converter": " Subtitles Converter"
+  "title_converter": " Subtitles Converter",
+  "error_file_limit": "File too large ({{ size }} > {{ limit }} bytes)",
+  "error_fetch_dict": "Failed to downlaod Chinese dictionary ({{ msg }})",
+  "error_encoding_label": "Unknown encoding \"{{ label }}\"",
+  "error_encoding_detect": "Failed to detect encoding of input file",
+  "error_js_error": "{{ name }}: {{ msg }}",
+  "error_format_no_format_line": "\"[Events] => Format\" line not found in the input file",
+  "error_format_no_format_line_field": "Field \"{{ field }}\" not found in \"Format\" line",
+  "error_format_no_field": "Field \"{{ field }}\" not found in dialogue",
+  "error_format_time": "Failed to parse time \"{{ string }}\"",
+  "warning_decoding": "Decoding error occurs ({{ input }})",
+  "warning_encoding": "Encoding error occurs ({{ output }})",
+  "warning_decoding_encoding": "Transcoding error occurs ({{ input }} => {{ output }})"
 }

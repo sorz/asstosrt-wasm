@@ -1,5 +1,17 @@
 {
   "html_title": "ASS/SSA 转 SRT 字幕转换器",
   "title_to": " 转 ",
-  "title_converter": " 字幕转换器"
+  "title_converter": " 字幕转换器",
+  "error_file_limit": "文件过大 ({{ size }} > {{ limit }} 字节)",
+  "error_fetch_dict": "下载中文繁简转换词典失败 ({{ msg }})",
+  "error_encoding_label": "未知编码 \"{{ label }}\"",
+  "error_encoding_detect": "无法检测输入文件的编码",
+  "error_js_error": "{{ name }}: {{ msg }}",
+  "error_format_no_format_line": "输入文件中缺少 \"[Events] => Format\" 行",
+  "error_format_no_format_line_field": "\"Format\" 行中缺少 \"{{ field }}\" 字段",
+  "error_format_no_field": "对话中缺少 \"{{ field }}\" 字段",
+  "error_format_time": "无法解析时间 \"{{ string }}\"",
+  "warning_decoding": "文本解码时有错误发生 ({{ input }})",
+  "warning_encoding": "文本编码时有错误发生 ({{ output }})",
+  "warning_decoding_encoding": "文本编解码时有错误发生 ({{ input }} => {{ output }})"
 }

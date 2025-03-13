@@ -8,12 +8,12 @@ use js_sys::{Array, Uint8Array};
 use serde::{Deserialize, Serialize};
 use simplecc::Dict;
 use std::{borrow::Cow, collections::HashSet, io::Cursor, ops::AddAssign, usize};
-use subtitle::FormatError;
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
 use web_sys::{Blob, BlobPropertyBag, File, FileReaderSync, Url};
 
 use crate::{FileWrap, Options, TaskRequest, TaskResult};
+pub(crate) use subtitle::FormatError;
 
 const FILE_SIZE_LIMIT: usize = 200 * 1024 * 1024;
 const MIME_SRT: &str = "text/srt";
@@ -23,8 +23,8 @@ const MIME_ZIP: &str = "application/zip";
 pub enum ConvertError {
     #[error("empty file list")]
     NoFile,
-    #[error("file too large ({0} bytes)")]
-    TooLarge(usize),
+    #[error("file too large ({size} > {limit} bytes)")]
+    TooLarge { size: usize, limit: usize },
     #[error("failed to fetch OpenCC dict: {0}")]
     FetchDict(String),
     #[error("unknown encoding label `{0}`")]
@@ -33,8 +33,8 @@ pub enum ConvertError {
     EncodingDetect,
     #[error("ass format error: {0}")]
     Format(#[from] FormatError),
-    #[error("{name}: {message}")]
-    JsError { name: String, message: String },
+    #[error("{name}: {msg}")]
+    JsError { name: String, msg: String },
 }
 
 impl From<JsValue> for ConvertError {
@@ -42,14 +42,14 @@ impl From<JsValue> for ConvertError {
         match value.dyn_into::<js_sys::Error>() {
             Ok(err) => Self::JsError {
                 name: err.name().into(),
-                message: err.message().into(),
+                msg: err.message().into(),
             },
             Err(value) => Self::JsError {
                 name: value
                     .js_typeof()
                     .as_string()
                     .unwrap_or("unknown".to_string()),
-                message: value.as_string().unwrap_or("unknown".to_string()),
+                msg: value.as_string().unwrap_or("unknown".to_string()),
             },
         }
     }
@@ -84,6 +84,12 @@ impl AddAssign for ConvertMeta {
     }
 }
 
+impl ConvertMeta {
+    pub(crate) fn has_error(&self) -> bool {
+        self.decode_error || self.encode_error
+    }
+}
+
 async fn fetch_opencc_dict(name: &str) -> Result<Dict, gloo_net::Error> {
     let text = Request::get(name).send().await?.text().await?;
     Ok(Dict::load_str(text))
@@ -97,9 +103,12 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
     };
 
     let check_file_size = |f: &File| {
-        let n = f.size() as usize;
-        if n > FILE_SIZE_LIMIT {
-            Err(ConvertError::TooLarge(n))
+        let size = f.size() as usize;
+        if size > FILE_SIZE_LIMIT {
+            Err(ConvertError::TooLarge {
+                size,
+                limit: FILE_SIZE_LIMIT,
+            })
         } else {
             Ok(())
         }
