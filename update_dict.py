@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Update OpenCC directories (static/{s2t,t2s}.txt)"""
+"""Update OpenCC directories (public/{s2t,t2s}.txt)"""
 
 from pathlib import Path
 import requests
 
 DICT_URL = "https://raw.githubusercontent.com/BYVoid/OpenCC/refs/heads/master/data/dictionary/"
-OUTPUT_DIR = "static/"
+OUTPUT_DIR = "public/"
 
 DICTS = {
     "s2t.txt": ["STCharacters.txt", "STPhrases.txt"],
