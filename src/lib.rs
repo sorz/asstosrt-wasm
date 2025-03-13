@@ -6,6 +6,7 @@ use reactive_stores::Store;
 use serde::{Deserialize, Serialize};
 use strum::{EnumString, IntoStaticStr};
 use web_sys::File;
+use worker::ConvertError;
 
 pub mod app;
 pub mod worker;
@@ -87,10 +88,10 @@ pub struct Options {
     pub no_zip: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum WorkerMessage {
     WorkerReady,
-    TaskDone(Result<TaskResult, String>),
+    TaskDone(Result<TaskResult, ConvertError>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

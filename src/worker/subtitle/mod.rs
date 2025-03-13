@@ -1,11 +1,38 @@
 use lazy_static::lazy_static;
 use lines::UniversalLines;
 use regex_lite::Regex;
+use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, cmp::Ordering, collections::HashMap, fmt, str::FromStr};
+use strum::AsRefStr;
+use thiserror::Error;
 
 mod lines;
 #[cfg(test)]
 mod tests;
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, AsRefStr)]
+pub enum Field {
+    #[strum(serialize = "start")]
+    Start,
+    #[strum(serialize = "end")]
+    End,
+    #[strum(serialize = "text")]
+    Text,
+    #[strum(serialize = "effect")]
+    Effect,
+}
+
+#[derive(Error, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum FormatError {
+    #[error("`[Events] => Format` line not found")]
+    NoFormatLine,
+    #[error("field `{0:?}` not found in `Format` line")]
+    NoFormatLineField(Field),
+    #[error("field `{0:?}` not found in dialogue")]
+    NoField(Field),
+    #[error("failed to parse time `{0}`")]
+    Time(String),
+}
 
 struct DialogueFormat {
     cols: HashMap<String, usize>,
@@ -23,29 +50,35 @@ struct Dialogue<'a> {
 }
 
 impl DialogueFormat {
-    fn new(line: &str) -> Result<Self, &'static str> {
+    fn new(line: &str) -> Result<Self, FormatError> {
         let cols = line[7..]
             .split(',')
             .map(|c| c.trim().to_lowercase())
             .enumerate()
             .map(|(i, n)| (n, i))
             .collect::<HashMap<_, _>>();
-        if !cols.contains_key("start") || !cols.contains_key("end") || !cols.contains_key("text") {
-            return Err("Start/End/Text not found in format line");
+        for field in [Field::Start, Field::End, Field::Text] {
+            if !cols.contains_key(field.as_ref()) {
+                return Err(FormatError::NoFormatLineField(field));
+            }
         }
         Ok(Self { cols })
     }
 
-    fn parse<'a>(&self, line: &'a str) -> Result<Dialogue<'a>, &'static str> {
+    fn parse<'a>(&self, line: &'a str) -> Result<Dialogue<'a>, FormatError> {
         let cols: Vec<_> = line[9..]
             .splitn(self.cols.len(), ',')
             .map(|c| c.trim())
             .collect();
-        let get = |col| self.cols.get(col).and_then(|i| cols.get(*i));
-        let start = get("start").ok_or("'Start' not found")?.parse()?;
-        let end = get("end").ok_or("'End' not found")?.parse()?;
-        let text = get("text").ok_or("'Text' not found")?;
-        let effect = get("effect").map(|t| !t.trim().is_empty()).unwrap_or(false);
+        let opt_field = |field: Field| self.cols.get(field.as_ref()).and_then(|i| cols.get(*i));
+        let req_field = |field: Field| opt_field(field).ok_or(FormatError::NoField(field));
+
+        let start = req_field(Field::Start)?.parse()?;
+        let end = req_field(Field::End)?.parse()?;
+        let text = req_field(Field::Text)?;
+        let effect = opt_field(Field::Effect)
+            .map(|t| !t.trim().is_empty())
+            .unwrap_or(false);
         Ok(Dialogue {
             start,
             end,
@@ -98,15 +131,16 @@ impl PartialOrd for Dialogue<'_> {
 
 /// parse "h:mm:ss.cc" to centisec.
 impl FromStr for Centisec {
-    type Err = &'static str;
+    type Err = FormatError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hmsc: Vec<u32> = s.split([':', '.']).filter_map(|s| s.parse().ok()).collect();
-        if hmsc.len() != 4 {
-            return Err("time format error");
+        if hmsc.len() == 4 {
+            Ok(Centisec(
+                hmsc[0] * 60 * 60 * 100 + hmsc[1] * 60 * 100 + hmsc[2] * 100 + hmsc[3],
+            ))
+        } else {
+            Err(FormatError::Time(s.to_string()))
         }
-        Ok(Centisec(
-            hmsc[0] * 60 * 60 * 100 + hmsc[1] * 60 * 100 + hmsc[2] * 100 + hmsc[3],
-        ))
     }
 }
 
@@ -134,7 +168,7 @@ pub fn ass_to_srt<'a: 'b, 'b, F>(
     no_effect: bool,
     mut mapper: Option<F>,
     offset_secs: f32,
-) -> Result<String, &'static str>
+) -> Result<String, FormatError>
 where
     F: FnMut(Cow<'b, str>) -> Cow<'b, str>,
 {
@@ -147,7 +181,7 @@ where
     // find format line
     let format = events
         .find(|l| l.starts_with("Format:"))
-        .ok_or("[Events] or Format line not found")?;
+        .ok_or(FormatError::NoFormatLine)?;
     let format = DialogueFormat::new(format)?;
     // parse dialogues
     let mut dialogues = events

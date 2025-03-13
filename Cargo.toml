@@ -17,6 +17,7 @@ leptos_i18n = { version = "0.5", default-features = false, features = ["csr", "j
 reactive_stores = "0.1"
 console_log = "1"
 log = "0.4"
+thiserror = "2"
 console_error_panic_hook = "0.1"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"

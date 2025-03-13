@@ -5,51 +5,97 @@ use chardetng::EncodingDetector;
 use encoding_rs::Encoding;
 use gloo_net::http::Request;
 use js_sys::{Array, Uint8Array};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use simplecc::Dict;
-use std::{borrow::Cow, io::Cursor};
+use std::{borrow::Cow, io::Cursor, usize};
+use subtitle::FormatError;
+use thiserror::Error;
 use wasm_bindgen::prelude::*;
-use web_sys::{Blob, BlobPropertyBag, FileReaderSync, Url};
+use web_sys::{Blob, BlobPropertyBag, File, FileReaderSync, Url};
 
-use crate::{Options, TaskRequest, TaskResult};
+use crate::{FileWrap, Options, TaskRequest, TaskResult};
 
+const FILE_SIZE_LIMIT: usize = 200 * 1024 * 1024;
 const MIME_SRT: &str = "text/srt";
 const MIME_ZIP: &str = "application/zip";
 
-#[derive(Deserialize, Debug, Clone)]
-enum Lines {
-    First,
-    Last,
-    All,
+#[derive(Error, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ConvertError {
+    #[error("empty file list")]
+    NoFile,
+    #[error("file too large ({0} bytes)")]
+    TooLarge(usize),
+    #[error("failed to fetch OpenCC dict: {0}")]
+    FetchDict(String),
+    #[error("unknown encoding label `{0}`")]
+    EncodingLabel(String),
+    #[error("failed to guess input encoding")]
+    EncodingDetect,
+    #[error("ass format error: {0}")]
+    Format(#[from] FormatError),
+    #[error("{name}: {message}")]
+    JsError { name: String, message: String },
 }
 
-type StrError = Cow<'static, str>;
+impl From<JsValue> for ConvertError {
+    fn from(value: JsValue) -> Self {
+        match value.dyn_into::<js_sys::Error>() {
+            Ok(err) => Self::JsError {
+                name: err.name().into(),
+                message: err.message().into(),
+            },
+            Err(value) => Self::JsError {
+                name: value
+                    .js_typeof()
+                    .as_string()
+                    .unwrap_or("unknown".to_string()),
+                message: value.as_string().unwrap_or("unknown".to_string()),
+            },
+        }
+    }
+}
 
-async fn fetch_simplecc_dict(name: &str) -> Result<Dict, StrError> {
-    let text = Request::get(name)
-        .send()
-        .await
-        .map_err(|e| Cow::Owned(format!("failed to fetch dict: {:?}", e)))?
-        .text()
-        .await
-        .map_err(|e| Cow::Owned(format!("failed to fetch dict: {:?}", e)))?;
+// gloo_net::Error did not impl serde, we convert it to String manually
+impl From<gloo_net::Error> for ConvertError {
+    fn from(value: gloo_net::Error) -> Self {
+        let msg = match value {
+            gloo_net::Error::JsError(err) => format!("[{}] {}", err.name, err.message),
+            gloo_net::Error::SerdeError(err) => err.to_string(),
+            gloo_net::Error::GlooError(msg) => msg,
+        };
+        Self::FetchDict(msg)
+    }
+}
+
+async fn fetch_opencc_dict(name: &str) -> Result<Dict, gloo_net::Error> {
+    let text = Request::get(name).send().await?.text().await?;
     Ok(Dict::load_str(text))
 }
 
-pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String> {
+pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, ConvertError> {
     // load simpecc dict
     let dict = match task.options.chinese_convertion.dict_name() {
-        Some(name) => Some(fetch_simplecc_dict(name).await?),
+        Some(name) => Some(fetch_opencc_dict(name).await?),
         None => None,
     };
 
-    let reader = FileReaderSync::new().unwrap();
+    let check_file_size = |f: &File| {
+        let n = f.size() as usize;
+        if n > FILE_SIZE_LIMIT {
+            Err(ConvertError::TooLarge(n))
+        } else {
+            Ok(())
+        }
+    };
+
+    let reader = FileReaderSync::new()?;
     // TODO: check & limit input file size
     let (content, mime) = if task.files.len() <= 1 {
         // single file, no zip
         let input_buf = {
-            let file = &task.files.first().unwrap().0;
-            let array = reader.read_as_array_buffer(file).unwrap();
+            let file = &task.files.first().ok_or(ConvertError::NoFile)?.0;
+            check_file_size(file)?;
+            let array = reader.read_as_array_buffer(file)?;
             let mut buf = vec![0u8; array.byte_length().try_into().unwrap()];
             Uint8Array::new(&array).copy_to(&mut buf);
             buf
@@ -57,6 +103,10 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String>
         let output = convert_single_file(&input_buf, &task.options, &dict)?;
         (output, MIME_SRT)
     } else {
+        // check file size
+        for FileWrap(file) in task.files.iter() {
+            check_file_size(file)?;
+        }
         // mulpitle files, with zip
         let files = task.files.into_iter().map(|file| {
             let name = file.0.name().trim_end_matches(".ass").to_string() + ".srt";
@@ -79,8 +129,8 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, String>
         (output_buf.into_inner().into_boxed_slice(), MIME_ZIP)
     };
     // create blob url
-    let file_blob = create_blob(&content, mime).unwrap();
-    let file_url = Url::create_object_url_with_blob(&file_blob).unwrap();
+    let file_blob = create_blob(&content, mime)?;
+    let file_url = Url::create_object_url_with_blob(&file_blob)?;
     Ok(TaskResult { file_url })
 }
 
@@ -103,19 +153,19 @@ fn convert_single_file(
     input: &[u8],
     opts: &Options,
     dict: &Option<Dict>,
-) -> Result<Box<[u8]>, StrError> {
+) -> Result<Box<[u8]>, ConvertError> {
     // set encodings
     let ass_charset = if opts.ass_charset.is_empty() {
-        detect_encoding(input).ok_or(Cow::Borrowed("failed to detect encoding"))?
+        detect_encoding(input).ok_or(ConvertError::EncodingDetect)?
     } else {
         Encoding::for_label(opts.ass_charset.as_bytes())
-            .ok_or(Cow::Borrowed("unknown input encoding"))?
+            .ok_or(ConvertError::EncodingLabel(opts.ass_charset.clone()))?
     };
     let srt_charset = if opts.srt_charset.is_empty() {
         ass_charset
     } else {
         Encoding::for_label(opts.srt_charset.as_bytes())
-            .ok_or(Cow::Borrowed("unknown output encoding"))?
+            .ok_or(ConvertError::EncodingLabel(opts.srt_charset.clone()))?
     };
 
     // set text map (for line strip & chinese convertion)
@@ -131,7 +181,7 @@ fn convert_single_file(
     // decode & convert
     let (ass, _, has_error) = ass_charset.decode(input);
     if has_error && !opts.ignore_charset_error {
-        return Err(Cow::Borrowed("decoding error"));
+        // TODO: set decode warning
     }
     let srt = subtitle::ass_to_srt(&ass, true, Some(text_map), opts.offset_secs)?;
 
@@ -139,7 +189,7 @@ fn convert_single_file(
     // TODO: insert BOM for utf-16
     let (output, _, has_error) = srt_charset.encode(&srt);
     if has_error && !opts.ignore_charset_error {
-        return Err(Cow::Borrowed("decoding error"));
+        // TODO: set encoding warning
     }
 
     // TODO: remove clone for utf-8 output

@@ -69,6 +69,7 @@ dependencies = [
  "serde_json",
  "simplecc",
  "strum",
+ "thiserror 2.0.12",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",

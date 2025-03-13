@@ -5,6 +5,8 @@ use strum::EnumIs;
 use uuid::Uuid;
 use web_sys::{File, Url};
 
+use crate::worker::ConvertError;
+
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Tasks(pub(crate) Vec<Task>);
 
@@ -62,7 +64,7 @@ pub(crate) enum TaskState {
     Pending { files: Vec<File> },
     Working,
     Done { file: Arc<BlobUrl> },
-    Error { message: String },
+    Error { error: ConvertError },
 }
 
 impl Task {
@@ -90,8 +92,8 @@ impl Task {
         self.state.set(TaskState::Done { file: file.into() });
     }
 
-    pub(crate) fn set_error(&self, message: String) {
-        self.state.set(TaskState::Error { message })
+    pub(crate) fn set_error(&self, error: ConvertError) {
+        self.state.set(TaskState::Error { error })
     }
 
     pub(crate) fn output_filename(&self) -> String {
