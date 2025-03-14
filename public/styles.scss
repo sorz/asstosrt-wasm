@@ -7,7 +7,39 @@
 @import "https://unpkg.com/open-props/normalize.min.css";
 @import "https://unpkg.com/open-props/buttons.min.css";
 
+@import "https://unpkg.com/open-props/theme.light.switch.min.css";
+@import "https://unpkg.com/open-props/theme.dark.switch.min.css";
 /* ------------------------------------------------------------ */
+
+@mixin theme-light {
+  --shadow-color-over-done-task: var(---lime-6);
+  --dash-border-color: black;
+  --task-bg-color: var(--gray-3);
+  --task-bg-color-done: var(--lime-3);
+  --task-bg-color-error: var(--red-3);
+}
+
+@mixin theme-dark {
+  --shadow-color-over-done-task: var(--teal-8);
+  --dash-border-color: white;
+  --task-bg-color: var(--gray-8);
+  --task-bg-color-done: var(--teal-11);
+  --task-bg-color-error: var(--red-11);
+}
+
+:root {
+  @include theme-light;
+}
+
+:root[data-theme=dark] {
+  @include theme-dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme=auto] {
+    @include theme-dark;
+  }
+}
 
 body {
   font-family: sans-serif;
@@ -67,14 +99,10 @@ ul.toggle-bar {
 }
 
 .drop-zone {
-  border: dashed 3px black;
+  border: dashed 3px var(--dash-border-color);
   border-radius: var(--radius-3);
   padding: var(--size-fluid-3);
   margin: 2rem 0;
-
-  @media (prefers-color-scheme: dark) {
-    border-color: white;
-  }
 
   p {
     margin: 1rem 0;
@@ -125,6 +153,7 @@ details.options {
     flex-direction: column;
     align-items: stretch;
 
+    background-color: var(--task-bg-color);
     box-shadow: var(--shadow-1);
     border-radius: var(--radius-2);
     padding: var(--size-fluid-2);
@@ -133,17 +162,8 @@ details.options {
       box-shadow: var(--shadow-3);
     }
 
-    @media (prefers-color-scheme: light) {
-      background-color: var(--gray-3);
-      &.done { background-color: var(--lime-3); }
-      &.error { background-color: var(--red-3); }
-    }
-
-    @media (prefers-color-scheme: dark) {
-      background-color: var(--gray-8);
-      &.done { background-color: var(--teal-11); }
-      &.error { background-color: var(--red-11); }
-    }
+    &.done { background-color: var(--task-bg-color-done); }
+    &.error { background-color: var(--task-bg-color-error); }
   }
 
   button.clear {
@@ -194,13 +214,8 @@ details.options {
 
     &:hover {
       text-decoration: none;
-    }
+      text-shadow: var(--shadow-color-over-done-task) 0 0 10px;
 
-    @media (prefers-color-scheme: light) {
-      &:hover { text-shadow: var(--lime-6) 0 0 10px; }
-    }
-    @media (prefers-color-scheme: dark) {
-      &:hover { text-shadow: var(--teal-8) 0 0 10px; }
     }
   }
 

@@ -11,14 +11,11 @@ mod lines;
 mod tests;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, AsRefStr, Display)]
+#[strum(serialize_all = "lowercase")]
 pub enum Field {
-    #[strum(serialize = "start")]
     Start,
-    #[strum(serialize = "end")]
     End,
-    #[strum(serialize = "text")]
     Text,
-    #[strum(serialize = "effect")]
     Effect,
 }
 

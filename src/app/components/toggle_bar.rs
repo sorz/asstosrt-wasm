@@ -1,42 +1,55 @@
 use leptos::prelude::*;
-use wasm_bindgen::JsValue;
+use leptos_i18n::t_string;
 
-use crate::app::i18n::{Locale, use_i18n};
-
-const STORAGE_KEY_LOCALE: &str = "ass2srt-locale";
-
-fn local_storage() -> Result<web_sys::Storage, JsValue> {
-    window()
-        .local_storage()?
-        .ok_or(JsValue::from_str("null localStorage"))
-}
-
-fn set_storage_item<K, V>(key: K, value: V) -> Result<(), JsValue>
-where
-    K: AsRef<str>,
-    V: AsRef<str>,
-{
-    local_storage()?.set_item(key.as_ref(), value.as_ref())
-}
-
-fn get_storage_item<K>(key: K) -> Result<Option<String>, JsValue>
-where
-    K: AsRef<str>,
-{
-    local_storage()?.get_item(key.as_ref())
-}
+use crate::app::{
+    Theme,
+    i18n::{Locale, use_i18n},
+    storage,
+};
 
 #[component]
 pub(crate) fn ToggleBar() -> impl IntoView {
+    view! {
+        <ul class="toggle-bar">
+            <LocaleSwitches />
+            <li class="sep">|</li>
+            <ThemeSwitch />
+        </ul>
+    }
+}
+
+#[component]
+fn ThemeSwitch() -> impl IntoView {
+    let i18n = use_i18n();
+    let theme: RwSignal<Theme> = use_context().expect("theme not found on context");
+    view! {
+        <li class="theme">
+            <button
+                type="button"
+                title=move || match theme.get() {
+                    Theme::Auto => t_string!(i18n, theme_auto),
+                    Theme::Light => t_string!(i18n, theme_light),
+                    Theme::Dark => t_string!(i18n, theme_dark),
+                }
+                on:click=move |_| theme.update(|t| t.switch_next())
+            >
+                {move || match theme.get() {
+                    Theme::Auto => "🌗",
+                    Theme::Light => "🌕",
+                    Theme::Dark => "🌑",
+                }}
+            </button>
+        </li>
+    }
+}
+
+#[component]
+fn LocaleSwitches() -> impl IntoView {
     let i18n = use_i18n();
 
     // read locale from localStorage or navigator.languages
     Effect::new(move |_| {
-        let locale = match get_storage_item(STORAGE_KEY_LOCALE)
-            .ok()
-            .flatten()
-            .and_then(|v| v.parse().ok())
-        {
+        let locale = match storage::get_parse(storage::Key::Locale) {
             Some(locale) => locale,
             _ => match window().navigator().language().as_deref() {
                 Some("zh-CN") | Some("zh-SG") | Some("zh") => Locale::zh_Hans,
@@ -49,13 +62,13 @@ pub(crate) fn ToggleBar() -> impl IntoView {
 
     let set_locale = move |locale: Locale| {
         i18n.set_locale(locale);
-        if let Err(err) = set_storage_item(STORAGE_KEY_LOCALE, locale) {
+        if let Err(err) = storage::set(storage::Key::Locale, locale) {
             log::error!("failed to set locale in storage: {:?}", err);
         }
     };
 
     let all_locales = [Locale::en, Locale::zh_Hans, Locale::zh_Hant];
-    let locale_switches = move || {
+    move || {
         all_locales
             .into_iter()
             .map(|locale| {
@@ -81,7 +94,5 @@ pub(crate) fn ToggleBar() -> impl IntoView {
                 }
             })
             .collect::<Vec<_>>()
-    };
-
-    view! { <ul class="toggle-bar">{locale_switches}</ul> }
+    }
 }
