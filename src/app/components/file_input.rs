@@ -1,8 +1,12 @@
 use leptos::prelude::*;
+use leptos_i18n::t;
 use web_sys::File;
+
+use crate::app::i18n::use_i18n;
 
 #[component]
 pub(crate) fn FileInput(#[prop(into)] on_files: UnsyncCallback<(Vec<File>,), ()>) -> impl IntoView {
+    let i18n = use_i18n();
     view! {
         <div
             class="drop-zone"
@@ -23,7 +27,7 @@ pub(crate) fn FileInput(#[prop(into)] on_files: UnsyncCallback<(Vec<File>,), ()>
                 }
             }
         >
-            <p>Drag & drop your files here</p>
+            <p>{t!(i18n, file_input_title)}</p>
             <p>
                 <input
                     type="file"
@@ -43,7 +47,7 @@ pub(crate) fn FileInput(#[prop(into)] on_files: UnsyncCallback<(Vec<File>,), ()>
                     }
                 />
             </p>
-            <p>Select/drop multiple files at once for bulk processing</p>
+            <p>{t!(i18n, file_input_note)}</p>
         </div>
     }
 }

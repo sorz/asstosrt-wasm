@@ -86,13 +86,7 @@ ul.toggle-bar {
 }
 
 details.options {
-  &[open] {
-    min-inline-size: var(--size-content-2);
-  }
-
   form {
-    width: fit-content;
-    margin: 0 auto;
     display: grid;
     grid-template-columns: max-content max-content;
     gap: var(--size-fluid-1);

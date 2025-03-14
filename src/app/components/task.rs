@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use leptos::prelude::*;
-use leptos_i18n::t;
+use leptos_i18n::{t, t_string};
 
 use crate::{
     app::{
@@ -13,10 +13,11 @@ use crate::{
 
 #[component]
 pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
+    let i18n = use_i18n();
     let clear_button = move || {
         view! {
             <button class="clear" on:click=move |_| set_tasks.write().clear_ended()>
-                "CLEAR ALL"
+                {t!(i18n, task_action_clear)}
             </button>
         }
     };
@@ -40,16 +41,13 @@ fn TaskItem(task: Task) -> impl IntoView {
     let i18n = use_i18n();
 
     let state_label = move || {
-        view! {
-            <span class="state">
-                {move || match *task.state.read() {
-                    TaskState::Pending { .. } => "⌛PENDING",
-                    TaskState::Working => "🟢WORKING",
-                    TaskState::Done { .. } => "🎉READY",
-                    TaskState::Error { .. } => "⚠️ERROR",
-                }}
-            </span>
-        }
+        let (icon, label) = match *task.state.read() {
+            TaskState::Pending { .. } => ("⌛", t_string!(i18n, task_state_pending)),
+            TaskState::Working => ("🟢", t_string!(i18n, task_state_working)),
+            TaskState::Done { .. } => ("🎉", t_string!(i18n, task_state_done)),
+            TaskState::Error(_) => ("⚠️", t_string!(i18n, task_state_error)),
+        };
+        view! { <span class="state">{icon}{" "}{label}</span> }
     };
     let title = move || {
         let fns = task.filenames.get();
@@ -64,7 +62,7 @@ fn TaskItem(task: Task) -> impl IntoView {
         let n = task.filenames.read().len();
         Some(view! {
             <details>
-                <summary>Total {n}files</summary>
+                <summary>{t!(i18n, task_file_list_summary, n)}</summary>
                 <ol>
                     <For
                         each=move || task.filenames.get().into_iter()

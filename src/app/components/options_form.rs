@@ -1,42 +1,44 @@
 use leptos::prelude::*;
+use leptos_i18n::{t, t_string};
 use reactive_stores::Store;
 
-use crate::{ChineseConvertion, LineStrip, Options, OptionsStoreFields};
+use crate::{ChineseConvertion, LineStrip, Options, OptionsStoreFields, app::i18n::use_i18n};
 
 #[component]
 pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
+    let i18n = use_i18n();
     let offset_string = RwSignal::new("".to_string());
 
     view! {
         <datalist id="charsets">
-            <option label="Unicode (UTF-8)" value="UTF-8" />
-            <option label="Unicode (UTF-16)" value="UTF-16" />
-            <option label="Simplified Chinese (GB18030)" value="GB18030" />
-            <option label="Traditional Chinese (Big5)" value="Big5" />
-            <option label="Japanese (Shift-JIS)" value="Shift-JIS" />
+            <option label=move || t_string!(i18n, opt_charset_utf8) value="UTF-8" />
+            <option label=move || t_string!(i18n, opt_charset_utf16) value="UTF-16" />
+            <option label=move || t_string!(i18n, opt_charset_gb) value="GB18030" />
+            <option label=move || t_string!(i18n, opt_charset_big5) value="Big5" />
+            <option label=move || t_string!(i18n, opt_charset_jis) value="Shift-JIS" />
         </datalist>
-        <label for="in-charset">ASS Encoding</label>
+        <label for="in-charset">{t!(i18n, opt_ass_encoding_label)}</label>
         <input
             type="text"
             id="in-charset"
             list="charsets"
-            placeholder="Auto detect"
+            placeholder=move || t_string!(i18n, opt_ass_encoding_placeholder)
             prop:value=move || options.ass_charset().read().clone()
             on:change:target=move |ev| {
                 *options.ass_charset().write() = ev.target().value().trim().to_string();
             }
         />
 
-        <label for="out-charset">SRT Encoding</label>
+        <label for="out-charset">{t!(i18n, opt_srt_encoding_label)}</label>
         <input
             type="text"
             id="out-charset"
             list="charsets"
-            placeholder="Same as ASS file"
+            placeholder=move || t_string!(i18n, opt_srt_encoding_placeholder)
             bind:value=options.srt_charset()
         />
 
-        <label for="conv-dict">Chinese convert</label>
+        <label for="conv-dict">{t!(i18n, opt_chinese_convert_label)}</label>
         <select
             id="conv-dict"
             prop:value=move || {
@@ -48,12 +50,16 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
                 options.chinese_convertion().set(value);
             }
         >
-            <option value=ChineseConvertion::Keep>Disabled</option>
-            <option value=ChineseConvertion::ToSimplified>To Simplified</option>
-            <option value=ChineseConvertion::ToTraditional>To Traditional</option>
+            <option value=ChineseConvertion::Keep>{t!(i18n, opt_chinese_convert_no)}</option>
+            <option value=ChineseConvertion::ToSimplified>
+                {t!(i18n, opt_chinese_convert_t2s)}
+            </option>
+            <option value=ChineseConvertion::ToTraditional>
+                {t!(i18n, opt_chinese_convert_st2)}
+            </option>
         </select>
 
-        <label for="lines">Lines</label>
+        <label for="lines">{t!(i18n, opt_lines_label)}</label>
         <select
             id="lines"
             prop:value=move || {
@@ -65,12 +71,12 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
                 options.line_strip().set(value);
             }
         >
-            <option value=LineStrip::KeepAll>Keep all</option>
-            <option value=LineStrip::KeepFirst>First line only</option>
-            <option value=LineStrip::KeepLast>Last line only</option>
+            <option value=LineStrip::KeepAll>{t!(i18n, opt_lines_all)}</option>
+            <option value=LineStrip::KeepFirst>{t!(i18n, opt_lines_first)}</option>
+            <option value=LineStrip::KeepLast>{t!(i18n, opt_lines_last)}</option>
         </select>
 
-        <label for="offset">Offset seconds</label>
+        <label for="offset">{t!(i18n, opt_offset_label)}</label>
         <input
             type="text"
             id="offset"
@@ -85,7 +91,7 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
 
         <label class="checkbox">
             <input type="checkbox" id="no-zip" bind:value=options.no_zip() />
-            Do not zip files
+            {t!(i18n, opt_no_zip_label)}
         </label>
     }
 }

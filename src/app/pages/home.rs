@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use leptos_i18n::t;
+use leptos_i18n::{t, t_string};
 use leptos_meta::Title;
 use reactive_stores::Store;
 
@@ -41,24 +41,19 @@ pub fn Home() -> impl IntoView {
     });
 
     view! {
-        <Title text=move || i18n.get_locale().get_keys_const().html_title().inner() />
+        <Title text=move || t_string!(i18n, html_title) />
         <div class="container">
             <ToggleBar />
             <h1>
                 <abbr title="Advanced SubStation Alpha">ASS</abbr>
-                /
-                <abbr title="SubStation Alpha">SSA</abbr>
                 {t!(i18n, title_to)}
                 <abbr title="SubRip">SRT</abbr>
                 {t!(i18n, title_converter)}
             </h1>
-
-            <ErrorBoundary fallback=|errors| {
+            <ErrorBoundary fallback=move |errors| {
                 view! {
-                    <h1>"Uh oh! Something went wrong!"</h1>
-
-                    <p>"Errors: "</p>
-                    // Render a list of errors as strings - good for development purposes
+                    <h1>{t!(i18n, error_title)}</h1>
+                    <p>{t!(i18n, error_list)}</p>
                     <ul>
                         {move || {
                             errors
@@ -71,12 +66,11 @@ pub fn Home() -> impl IntoView {
                 }
             }>
                 <details class="options">
-                    <summary>Show options</summary>
+                    <summary>{t!(i18n, opt_title)}</summary>
                     <form>
                         <OptionsForm options=options />
                     </form>
                 </details>
-
                 <FileInput on_files=move |files| {
                     if options.read().no_zip {
                         for file in files {
@@ -87,24 +81,22 @@ pub fn Home() -> impl IntoView {
                     }
                 } />
                 <TaskList tasks set_tasks />
-
             </ErrorBoundary>
-
             <footer>
                 <p>
-                    Only new browsers are supported. If that dose not work,
-                    <a href="https://lab.sorz.org/tools/asstosrt/">try this</a>.
+                    {t!(
+                        i18n, footer_browser_compat, alt=move || view! {
+                    <a href="https://lab.sorz.org/tools/asstosrt/">
+                        {t!(i18n, footer_alt)}
+                    </a>
+                }
+                    )}
                 </p>
-                <p>Your files keep on your device and would NOT be uploaded to anywhere.</p>
+                <p>{t!(i18n, footer_file_stay_local)}</p>
                 <p>
-                    Powered by
-                    <a href="https://www.rust-lang.org/" title="The Rust Programming Language">
-                        Rust
-                    </a>and a set of lovely open-source projects.
-                </p>
-                <p>
-                    Source code is avaiable on
-                    <a href="https://github.com/sorz/asstosrt-wasm">GitHub</a>.
+                    {t!(
+                        i18n, footer_source_code, github=|| view! { <a href="https://github.com/sorz/asstosrt-wasm">GitHub</a> }
+                    )}
                 </p>
             </footer>
         </div>
