@@ -3,6 +3,7 @@ mod zip;
 
 use chardetng::EncodingDetector;
 use encoding_rs::Encoding;
+use futures::channel::oneshot::Canceled;
 use gloo_net::http::Request;
 use js_sys::{Array, Uint8Array};
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,8 @@ pub enum ConvertError {
     EncodingDetect,
     #[error("ass format error: {0}")]
     Format(#[from] FormatError),
+    #[error("canceled")]
+    Canceled,
     #[error("{name}: {msg}")]
     JsError { name: String, msg: String },
 }
@@ -52,6 +55,12 @@ impl From<JsValue> for ConvertError {
                 msg: value.as_string().unwrap_or("unknown".to_string()),
             },
         }
+    }
+}
+
+impl From<Canceled> for ConvertError {
+    fn from(value: Canceled) -> Self {
+        Self::Canceled
     }
 }
 

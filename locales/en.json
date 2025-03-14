@@ -6,6 +6,7 @@
   "error_fetch_dict": "Failed to downlaod Chinese dictionary ({{ msg }})",
   "error_encoding_label": "Unknown encoding \"{{ label }}\"",
   "error_encoding_detect": "Failed to detect encoding of input file",
+  "error_canceled": "Canceled",
   "error_js_error": "{{ name }}: {{ msg }}",
   "error_format_no_format_line": "\"[Events] => Format\" line not found in the input file",
   "error_format_no_format_line_field": "Field \"{{ field }}\" not found in \"Format\" line",

@@ -1,6 +1,9 @@
-use futures::channel::oneshot::{Receiver, channel};
+use futures::{
+    channel::oneshot::{Receiver, channel},
+    lock::Mutex,
+};
 use send_wrapper::SendWrapper;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use wasm_bindgen::prelude::*;
 use web_sys::{File, MessageEvent, Worker, WorkerOptions, WorkerType};
 
@@ -46,10 +49,13 @@ impl Converter {
         files: Vec<File>,
     ) -> Result<(BlobUrl, ConvertMeta), ConvertError> {
         // wait for worker ready
-        if let Some(ready) = self.ready.lock().unwrap().take() {
-            log::debug!("wait for worker ready");
-            ready.await.unwrap();
+        let mut ready = self.ready.lock().await;
+        // we deliberately hold the lock unit task done
+        if let Some(ready) = ready.take() {
+            log::debug!("convert: wait for worker ready");
+            ready.await?;
         }
+        log::debug!("convert: {:?} files", files.len());
         // setup event listener
         let (result_tx, result_rx) = channel();
         let worker = self.worker.clone().take();
@@ -69,13 +75,8 @@ impl Converter {
             options,
             files: files.into_iter().map(FileWrap).collect(),
         };
-        worker
-            .post_message(&serde_wasm_bindgen::to_value(&request).unwrap())
-            .unwrap();
+        worker.post_message(&serde_wasm_bindgen::to_value(&request).unwrap())?;
         // wait response
-        result_rx
-            .await
-            .unwrap()
-            .map(|r| (BlobUrl::new(r.file_url), r.meta))
+        result_rx.await?.map(|r| (BlobUrl::new(r.file_url), r.meta))
     }
 }

@@ -39,6 +39,7 @@ pub(crate) fn FileInput(#[prop(into)] on_files: UnsyncCallback<(Vec<File>,), ()>
                                 on_files.run((files,));
                             }
                         }
+                        ev.target().set_value("");
                     }
                 />
             </p>

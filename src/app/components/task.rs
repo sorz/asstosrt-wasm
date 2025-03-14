@@ -91,6 +91,7 @@ fn TaskItem(task: Task) -> impl IntoView {
                         t!(i18n, error_encoding_label, label).into_any()
                     }
                     ConvertError::EncodingDetect => t!(i18n, error_encoding_detect).into_any(),
+                    ConvertError::Canceled => t!(i18n, error_canceled).into_any(),
                     ConvertError::JsError { name, msg } => {
                         t!(i18n, error_js_error, name, msg).into_any()
                     }

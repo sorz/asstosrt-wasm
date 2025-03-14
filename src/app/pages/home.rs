@@ -77,7 +77,15 @@ pub fn Home() -> impl IntoView {
                     </form>
                 </details>
 
-                <FileInput on_files=move |files| set_tasks.write().add(Task::new(files)) />
+                <FileInput on_files=move |files| {
+                    if options.read().no_zip {
+                        for file in files {
+                            set_tasks.write().add(Task::new(vec![file]));
+                        }
+                    } else {
+                        set_tasks.write().add(Task::new(files))
+                    }
+                } />
                 <TaskList tasks set_tasks />
 
             </ErrorBoundary>

@@ -6,6 +6,7 @@
   "error_fetch_dict": "下載中文繁簡轉換字典失敗 ({{ msg }})",
   "error_encoding_label": "未知編碼 \"{{ label }}\"",
   "error_encoding_detect": "無法偵測輸入檔案的編碼",
+  "error_canceled": "已取消",
   "error_js_error": "{{ name }}: {{ msg }}",
   "error_format_no_format_line": "輸入檔中缺少 \"[Events] => Format\" 行",
   "error_format_no_format_line_field": "\"Format\" 行中缺少 \"{{ field }}\" 欄位",
