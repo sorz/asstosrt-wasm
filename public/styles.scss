@@ -85,13 +85,31 @@ ul.toggle-bar {
   }
 }
 
-form#options {
-  p {
-    margin: 1rem 0;
+details.options {
+  &[open] {
+    min-inline-size: var(--size-content-2);
   }
-  
-  input:invalid {
-    outline: 2px solid red;
+
+  form {
+    width: fit-content;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: max-content max-content;
+    gap: var(--size-fluid-1);
+    align-items: center;
+
+    label {
+      text-align: right;
+    }
+
+    label.checkbox {
+      grid-column-end: span 2;
+      text-align: center;
+    }
+
+    input:invalid {
+      outline: 2px solid red;
+    }
   }
 }
 

@@ -70,9 +70,9 @@ pub fn Home() -> impl IntoView {
                     </ul>
                 }
             }>
-                <details>
+                <details class="options">
                     <summary>Show options</summary>
-                    <form id="options">
+                    <form>
                         <OptionsForm options=options />
                     </form>
                 </details>
