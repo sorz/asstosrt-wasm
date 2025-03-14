@@ -36,7 +36,7 @@
   "opt_lines_first": "僅保留第一行",
   "opt_lines_last": "僅保留最後一行",
   "opt_offset_label": "時間偏移（秒）",
-  "opt_no_zip_label": " 不要合併打包為 ZIP 檔案",
+  "opt_no_zip_label": "不要合併打包為 ZIP 檔案",
   "file_input_title": "請拖曳檔案到此處",
   "file_input_note": "可一次拖曳/選擇多個檔案進行批次處理",
   "task_action_clear": "清空列表",
@@ -50,6 +50,6 @@
   "theme_dark": "暗色主題",
   "footer_browser_compat": "僅支援較新版本的瀏覽器。如果遇到問題，可以{{ alt }}。",
   "footer_alt": "試試這個",
-  "footer_file_stay_local": "您的檔案僅在本地處理，不會被上傳到任何地方。",
+  "footer_file_stay_local": "閣下的檔案僅在本地處理，不會被上傳到任何地方。",
   "footer_source_code": "原始碼可在 {{ github }} 取得。"
 }
