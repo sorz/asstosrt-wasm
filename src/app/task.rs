@@ -15,10 +15,6 @@ impl Tasks {
         self.0.push(task);
     }
 
-    pub(crate) fn remove(&mut self, task_id: Uuid) {
-        self.retain(|task| task.id != task_id);
-    }
-
     /// Clear all done/error tasks
     pub(crate) fn clear_ended(&mut self) {
         self.retain(|task| {

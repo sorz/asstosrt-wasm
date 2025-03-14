@@ -8,7 +8,7 @@ use gloo_net::http::Request;
 use js_sys::{Array, Uint8Array};
 use serde::{Deserialize, Serialize};
 use simplecc::Dict;
-use std::{borrow::Cow, collections::HashSet, io::Cursor, ops::AddAssign, usize};
+use std::{borrow::Cow, collections::HashSet, io::Cursor, ops::AddAssign};
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
 use web_sys::{Blob, BlobPropertyBag, File, FileReaderSync, Url};
@@ -59,7 +59,7 @@ impl From<JsValue> for ConvertError {
 }
 
 impl From<Canceled> for ConvertError {
-    fn from(value: Canceled) -> Self {
+    fn from(_: Canceled) -> Self {
         Self::Canceled
     }
 }
