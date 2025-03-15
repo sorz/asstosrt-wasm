@@ -1,10 +1,12 @@
 #![feature(closure_lifetime_binder)]
 use std::borrow::Cow;
 
+use app::storage::{self, Key};
 use leptos::prelude::*;
 use reactive_stores::Store;
 use serde::{Deserialize, Serialize};
 use strum::{EnumString, IntoStaticStr};
+use wasm_bindgen::JsValue;
 use web_sys::File;
 use worker::{ConvertError, ConvertMeta};
 
@@ -85,6 +87,31 @@ pub struct Options {
     pub line_strip: LineStrip,
     pub offset_millis: i32,
     pub no_zip: bool,
+}
+
+impl Options {
+    pub(crate) fn load_from_storage() -> Self {
+        storage::get(Key::Options)
+            .ok()
+            .flatten()
+            .as_deref()
+            .map(serde_json::from_str)
+            .transpose()
+            .ok()
+            .flatten()
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn save_to_storage(&self) -> Result<(), JsValue> {
+        storage::set(
+            Key::Options,
+            serde_json::to_string(self).expect("failed to serialize"),
+        )
+    }
+
+    pub(crate) fn is_default(&self) -> bool {
+        self == &Self::default()
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

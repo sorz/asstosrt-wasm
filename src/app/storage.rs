@@ -9,6 +9,7 @@ use wasm_bindgen::JsValue;
 pub(crate) enum Key {
     Locale,
     Theme,
+    Options,
 }
 
 fn local() -> Result<web_sys::Storage, JsValue> {

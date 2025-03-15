@@ -17,7 +17,7 @@ use crate::{
 #[component]
 pub fn Home() -> impl IntoView {
     let i18n = use_i18n();
-    let options = Store::new(Options::default());
+    let options = Store::new(Options::load_from_storage());
     let (tasks, set_tasks) = signal(Tasks::default());
     let converter: Converter = use_context().expect("converter not found");
 
@@ -34,7 +34,7 @@ pub fn Home() -> impl IntoView {
             }
         }
     });
-
+    // Schedule task
     Effect::new(move |_| {
         let tasks = tasks.read();
         if !tasks.any_working_task() {
@@ -42,6 +42,12 @@ pub fn Home() -> impl IntoView {
             if let Some(task) = tasks.get_next_pending() {
                 convert.dispatch_local(task);
             }
+        }
+    });
+    // Save options
+    Effect::new(move |_| {
+        if let Err(err) = options.read().save_to_storage() {
+            log::error!("failed to save options: {:?}", err);
         }
     });
 
@@ -70,7 +76,7 @@ pub fn Home() -> impl IntoView {
                     </ul>
                 }
             }>
-                <details class="options">
+                <details class="options" prop:open=move || !options.read_untracked().is_default()>
                     <summary>{t!(i18n, opt_title)}</summary>
                     <form>
                         <OptionsForm options=options />

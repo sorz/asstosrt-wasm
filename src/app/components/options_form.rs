@@ -7,7 +7,19 @@ use crate::{ChineseConvertion, LineStrip, Options, OptionsStoreFields, app::i18n
 #[component]
 pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
     let i18n = use_i18n();
-    let offset_string = RwSignal::new("".to_string());
+    let offset_string = RwSignal::new({
+        let ms: i32 = options.offset_millis().get_untracked();
+        if ms == 0 {
+            String::new()
+        } else {
+            format!("{:.3}", (ms as f32) / 1000.0)
+        }
+    });
+    // workaround: <select> won't select prop:value on the first render
+    Effect::new(move || {
+        options.chinese_convertion().notify();
+        options.line_strip().notify();
+    });
 
     view! {
         <datalist id="charsets">
@@ -22,10 +34,7 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
             id="in-charset"
             list="charsets"
             placeholder=move || t_string!(i18n, opt_ass_encoding_placeholder)
-            prop:value=move || options.ass_charset().read().clone()
-            on:change:target=move |ev| {
-                *options.ass_charset().write() = ev.target().value().trim().to_string();
-            }
+            bind:value=options.ass_charset()
         />
 
         <label for="out-charset">{t!(i18n, opt_srt_encoding_label)}</label>
@@ -83,13 +92,13 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
             pattern=r"-?\d*\.?\d{0,3}"
             bind:value=offset_string
             on:blur=move |_| {
-                let offset: f32 = offset_string.get().parse().unwrap_or_default();
-                options.offset_millis().set((offset / 1000.0).round() as i32);
+                let offset: f32 = offset_string.read().parse().unwrap_or_default();
+                options.offset_millis().set((offset * 1000.0).round() as i32);
             }
         />
 
         <label class="checkbox">
-            <input type="checkbox" id="no-zip" bind:value=options.no_zip() />
+            <input type="checkbox" id="no-zip" bind:checked=options.no_zip() />
             {t!(i18n, opt_no_zip_label)}
         </label>
     }
