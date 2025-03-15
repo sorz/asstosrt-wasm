@@ -1,14 +1,9 @@
 /* --------------------- Open Props --------------------------- */
-
-/* the props */
-@import "https://unpkg.com/open-props";
-
-/* optional imports that use the props */
-@import "https://unpkg.com/open-props/normalize.min.css";
-@import "https://unpkg.com/open-props/buttons.min.css";
-
-@import "https://unpkg.com/open-props/theme.light.switch.min.css";
-@import "https://unpkg.com/open-props/theme.dark.switch.min.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/open-props.min.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/normalize.min.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/buttons.min.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/theme.light.switch.min.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/theme.dark.switch.min.css";
 /* ------------------------------------------------------------ */
 
 @mixin theme-light {
