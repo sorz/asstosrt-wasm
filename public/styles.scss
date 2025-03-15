@@ -4,6 +4,8 @@
 @import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/buttons.min.css";
 @import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/theme.light.switch.min.css";
 @import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/theme.dark.switch.min.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/animations.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/easings.css";
 /* ------------------------------------------------------------ */
 
 @mixin theme-light {
@@ -24,6 +26,9 @@
 
 :root {
   @include theme-light;
+  transition:
+    background-color var(--ease-in-out-1) 0.4s,
+    color var(--ease-in-out-1) 0.4s;
 }
 
 :root[data-theme=dark] {
@@ -103,6 +108,9 @@ ul.toggle-bar {
   border-radius: var(--radius-3);
   padding: var(--size-fluid-3);
   margin: 2rem 0;
+  animation: var(--animation-fade-in) forwards, var(--animation-slide-in-right);
+  animation-duration: 0.4s;
+  animation-timing-function: var(--ease-out-4);
 
   p {
     margin: 1rem 0;
@@ -162,12 +170,28 @@ details.options {
     border-radius: var(--radius-2);
     padding: var(--size-fluid-2);
 
+    opacity: 0;
+    animation: var(--animation-fade-in) forwards, var(--animation-slide-in-left);
+    animation-duration: 0.4s;
+    animation-timing-function: var(--ease-out-4);
+    transition: background-color var(--ease-in-out-1) 0.4s;
+
     &:hover {
       box-shadow: var(--shadow-3);
     }
 
-    &.done { background-color: var(--task-bg-color-done); }
-    &.error { background-color: var(--task-bg-color-error); }
+    &.working .state {
+      animation: var(--animation-blink);
+    }
+    &.done {
+      background-color: var(--task-bg-color-done);
+    }
+    &.error {
+      opacity: 1; /** in case the fade-in animation is interrupted **/
+      background-color: var(--task-bg-color-error);
+      animation: var(--animation-shake-x);
+      animation-duration: 0.5s;
+    }
   }
 
   button.clear {
@@ -216,10 +240,13 @@ details.options {
     margin-right: -6px;
     user-select: none;
 
+    opacity: 0;
+    animation: var(--animation-fade-in) forwards, var(--animation-shake-z);
+    transition: text-shadow var(--ease-in-out-2) 0.3s;
+
     &:hover {
       text-decoration: none;
       text-shadow: var(--shadow-color-over-done-task) 0 0 10px;
-
     }
   }
 
