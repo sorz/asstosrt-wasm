@@ -15,6 +15,10 @@ impl Tasks {
         self.0.push(task);
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// Set is_removing flag for all done/error tasks
     /// Return the number of modified tasks
     pub(crate) fn clear_ended_prepare(&mut self) -> usize {

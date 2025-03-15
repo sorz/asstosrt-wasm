@@ -41,6 +41,16 @@
   }
 }
 
+@media (width >= 360px) {
+  :root {
+    /* remove animation-induced scrollbar */
+    overflow-x: hidden;
+    /* fix content jump caused by scrollbar */
+    margin-left: calc(100vw - 100%);
+    margin-right: 0;
+  }
+}
+
 body {
   font-family: sans-serif;
   text-align: center;
@@ -77,6 +87,11 @@ h1 {
 footer {
   opacity: 0.5;
   margin-top: 2rem;
+  transition: opacity 0.5s;
+
+  &.hide {
+    display: none;
+  }
 }
 
 ul.toggle-bar {
@@ -157,7 +172,6 @@ details.options {
 
   > li {
     max-inline-size: var(--size-content-3);
-    inline-size: var(--size-content-3);
   }
 
   > li.task {
@@ -207,6 +221,7 @@ details.options {
     background: none;
     border: none;
     box-shadow: none;
+    margin-bottom: var(--size-fluid-2);
 
     &:hover {
       text-decoration: underline;

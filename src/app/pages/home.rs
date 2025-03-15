@@ -87,7 +87,7 @@ pub fn Home() -> impl IntoView {
                 } />
                 <TaskList tasks set_tasks />
             </ErrorBoundary>
-            <footer>
+            <footer class:hide=move || !tasks.read().is_empty()>
                 <p>
                     {t!(
                         i18n, footer_browser_compat, alt=move || view! {
