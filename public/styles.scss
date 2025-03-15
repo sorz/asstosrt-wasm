@@ -26,13 +26,13 @@
 
 :root {
   @include theme-light;
-  transition:
-    background-color var(--ease-in-out-1) 0.4s,
-    color var(--ease-in-out-1) 0.4s;
-}
+  &[data-theme].loaded {
+    transition:
+      background-color var(--ease-in-out-1) 0.4s,
+      color var(--ease-in-out-1) 0.4s;
+  }
 
-:root[data-theme=dark] {
-  @include theme-dark;
+  &[data-theme=dark] { @include theme-dark; }
 }
 
 @media (prefers-color-scheme: dark) {

@@ -1,10 +1,12 @@
 leptos_i18n::load_locales!();
+use std::time::Duration;
+
 use converter::Converter;
 use i18n::I18nContextProvider;
 use leptos::prelude::*;
 use leptos_meta::*;
 use leptos_router::{components::*, path};
-use strum::{Display, EnumString};
+use strum::{AsRefStr, Display, EnumString};
 
 use pages::{home::Home, not_found::NotFound};
 
@@ -27,9 +29,16 @@ pub fn App() -> impl IntoView {
     if use_context::<RwSignal<Theme>>().is_none() {
         provide_context(theme);
     }
+    // Workaround for theme transision, which is enabled only if loaded = true
+    let (loaded, set_loaded) = signal(false);
+    set_interval(move || *set_loaded.write() = true, Duration::from_secs(1));
+
     view! {
         <I18nContextProvider>
-            <Html attr:data-theme=move || theme.read().to_string() />
+            <Html
+                class:loaded=move || loaded.get()
+                attr:data-theme=move || theme.read().to_string()
+            />
             <Meta charset="UTF-8" />
             <Meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <Router>
@@ -41,7 +50,7 @@ pub fn App() -> impl IntoView {
     }
 }
 
-#[derive(Debug, Clone, Copy, Display, EnumString)]
+#[derive(Debug, Clone, Copy, Display, EnumString, AsRefStr)]
 #[strum(serialize_all = "lowercase")]
 pub(crate) enum Theme {
     Auto,

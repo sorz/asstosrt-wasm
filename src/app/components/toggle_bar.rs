@@ -31,7 +31,15 @@ fn ThemeSwitch() -> impl IntoView {
                     Theme::Light => t_string!(i18n, theme_light),
                     Theme::Dark => t_string!(i18n, theme_dark),
                 }
-                on:click=move |_| theme.update(|t| t.switch_next())
+                on:click=move |_| {
+                    theme
+                        .update(|t| {
+                            t.switch_next();
+                            if let Err(err) = storage::set(storage::Key::Theme, t) {
+                                log::error!("failed to set theme in storage: {:?}", err);
+                            }
+                        })
+                }
             >
                 {move || match theme.get() {
                     Theme::Auto => "🌗",

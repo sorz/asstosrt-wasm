@@ -18,10 +18,6 @@ pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) 
     let (remove_pending_count, set_remove_pending_count) = signal(0);
     // When all animation end, we clear the task list
     Effect::new(move |_| {
-        log::debug!(
-            "effect: remove_pending_count={}",
-            remove_pending_count.get_untracked()
-        );
         if remove_pending_count.get() == 0 {
             set_tasks.write().clear();
         }
