@@ -30,6 +30,10 @@ impl Tasks {
             .any(|task| task.state.with(|state| state.is_done() || state.is_error()))
     }
 
+    pub(crate) fn any_working_task(&self) -> bool {
+        self.0.iter().any(|task| task.state.read().is_working())
+    }
+
     pub(crate) fn get_next_pending(&self) -> Option<Task> {
         self.0
             .iter()
@@ -79,14 +83,12 @@ impl Task {
     }
 
     pub(crate) fn set_working(&self) -> Option<Vec<File>> {
-        let mut ret = None;
-        self.state.update(|state| {
-            ret = match mem::replace(state, TaskState::Working) {
+        self.state
+            .try_update(|state| match mem::replace(state, TaskState::Working) {
                 TaskState::Pending { files } => Some(files),
                 _ => None,
-            };
-        });
-        ret
+            })
+            .flatten()
     }
 
     pub(crate) fn set_done(&self, file: BlobUrl, meta: ConvertMeta) {

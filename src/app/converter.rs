@@ -1,6 +1,6 @@
 use futures::{
     channel::oneshot::{Receiver, channel},
-    lock::Mutex,
+    lock::{Mutex, MutexGuard},
 };
 use send_wrapper::SendWrapper;
 use std::sync::Arc;
@@ -13,12 +13,29 @@ use super::task::BlobUrl;
 
 #[derive(Debug, Clone)]
 pub(crate) struct Converter {
-    worker: SendWrapper<Worker>,
-    ready: Arc<Mutex<Option<Receiver<()>>>>,
+    inner: Arc<Mutex<Inner>>,
 }
 
 impl Converter {
     pub(crate) fn new() -> Self {
+        Self {
+            inner: Mutex::new(Inner::new()).into(),
+        }
+    }
+
+    pub(crate) async fn lock(&self) -> MutexGuard<'_, Inner> {
+        self.inner.lock().await
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct Inner {
+    worker: SendWrapper<Worker>,
+    ready: Option<Receiver<()>>,
+}
+
+impl Inner {
+    fn new() -> Self {
         log::debug!("spawning worker");
         let opts = WorkerOptions::new();
         opts.set_type(WorkerType::Module);
@@ -39,19 +56,17 @@ impl Converter {
         on_message.forget();
         Self {
             worker: SendWrapper::new(worker),
-            ready: Mutex::new(Some(ready_rx)).into(),
+            ready: Some(ready_rx),
         }
     }
 
     pub(crate) async fn convert(
-        &self,
+        &mut self,
         options: Options,
         files: Vec<File>,
     ) -> Result<(BlobUrl, ConvertMeta), ConvertError> {
         // wait for worker ready
-        let mut ready = self.ready.lock().await;
-        // we deliberately hold the lock unit task done
-        if let Some(ready) = ready.take() {
+        if let Some(ready) = self.ready.take() {
             log::debug!("convert: wait for worker ready");
             ready.await?;
         }

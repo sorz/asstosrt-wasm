@@ -23,11 +23,12 @@ pub fn Home() -> impl IntoView {
 
     let convert = Action::new_local(move |task: &Task| {
         let task = *task;
-        let files = task.set_working().unwrap();
         let options = options.read_untracked().clone();
         let converter = converter.clone();
         async move {
-            match converter.convert(options, files).await {
+            let mut conv = converter.lock().await;
+            let files = task.set_working().expect("try to work on non-pending task");
+            match conv.convert(options, files).await {
                 Ok((file, meta)) => task.set_done(file, meta),
                 Err(msg) => task.set_error(msg),
             }
@@ -35,8 +36,12 @@ pub fn Home() -> impl IntoView {
     });
 
     Effect::new(move |_| {
-        if let Some(task) = tasks.get().get_next_pending() {
-            convert.dispatch_local(task);
+        let tasks = tasks.read();
+        if !tasks.any_working_task() {
+            // do it in serial
+            if let Some(task) = tasks.get_next_pending() {
+                convert.dispatch_local(task);
+            }
         }
     });
 
