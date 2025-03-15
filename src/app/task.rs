@@ -15,12 +15,23 @@ impl Tasks {
         self.0.push(task);
     }
 
-    /// Clear all done/error tasks
-    pub(crate) fn clear_ended(&mut self) {
-        self.retain(|task| {
-            let state = task.state.read();
-            state.is_pending() || state.is_working()
-        });
+    /// Set is_removing flag for all done/error tasks
+    /// Return the number of modified tasks
+    pub(crate) fn clear_ended_prepare(&mut self) -> usize {
+        let mut n = 0;
+        for task in self.0.iter() {
+            let state = task.state.read_untracked();
+            if state.is_done() || state.is_error() {
+                *task.is_removing.write() = true;
+                n += 1
+            }
+        }
+        n
+    }
+
+    // Clear all tasks which has set is_removing flag
+    pub(crate) fn clear(&mut self) {
+        self.retain(|task| !task.is_removing.get_untracked());
     }
 
     /// Check if any task is done or errored
@@ -45,7 +56,9 @@ impl Tasks {
         self.0.retain(|task| {
             let retain = f(task);
             if !retain {
+                task.filenames.dispose();
                 task.state.dispose();
+                task.is_removing.dispose();
             }
             retain
         })
@@ -57,6 +70,8 @@ pub(crate) struct Task {
     pub(crate) id: Uuid,
     pub(crate) filenames: RwSignal<Vec<String>>,
     pub(crate) state: RwSignal<TaskState, LocalStorage>,
+    /// To be removed from task list (waiting for animation end)
+    pub(crate) is_removing: RwSignal<bool>,
 }
 
 #[derive(Debug, Clone, EnumIs)]
@@ -79,6 +94,7 @@ impl Task {
             id: Uuid::new_v4(),
             filenames: RwSignal::new(filenames),
             state: RwSignal::new_local(TaskState::Pending { files }),
+            is_removing: RwSignal::new(false),
         }
     }
 

@@ -192,6 +192,12 @@ details.options {
       animation: var(--animation-shake-x);
       animation-duration: 0.5s;
     }
+    &.removing {
+      opacity: 1;
+      animation: var(--animation-slide-out-right), var(--animation-fade-out) forwards;
+      animation-duration: 0.4s;
+      animation-timing-function: var(--ease-out-4);
+    }
   }
 
   button.clear {

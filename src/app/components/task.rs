@@ -14,9 +14,27 @@ use crate::{
 #[component]
 pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
     let i18n = use_i18n();
+    // Count how many task is playing remove animation
+    let (remove_pending_count, set_remove_pending_count) = signal(0);
+    // When all animation end, we clear the task list
+    Effect::new(move |_| {
+        log::debug!(
+            "effect: remove_pending_count={}",
+            remove_pending_count.get_untracked()
+        );
+        if remove_pending_count.get() == 0 {
+            set_tasks.write().clear();
+        }
+    });
+
     let clear_button = move || {
         view! {
-            <button class="clear" on:click=move |_| set_tasks.write().clear_ended()>
+            <button
+                class="clear"
+                on:click=move |_| {
+                    *set_remove_pending_count.write() = set_tasks.write().clear_ended_prepare();
+                }
+            >
                 {t!(i18n, task_action_clear)}
             </button>
         }
@@ -26,10 +44,10 @@ pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) 
             <For
                 each=move || tasks.get().0.into_iter().rev()
                 key=|task| task.id
-                children=move |task| view! { <TaskItem task /> }
+                children=move |task| view! { <TaskItem task set_remove_pending_count /> }
             />
             {move || {
-                Some(move || view! { <li class="actions">{clear_button()}</li> })
+                Some(move || view! { <li class="actions">{clear_button}</li> })
                     .take_if(|_| tasks.get().any_ended())
             }}
         </ul>
@@ -37,7 +55,7 @@ pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) 
 }
 
 #[component]
-fn TaskItem(task: Task) -> impl IntoView {
+fn TaskItem(task: Task, set_remove_pending_count: WriteSignal<usize>) -> impl IntoView {
     let i18n = use_i18n();
 
     let state_label = move || {
@@ -155,6 +173,13 @@ fn TaskItem(task: Task) -> impl IntoView {
             class:working=move || task.state.read().is_working()
             class:done=move || task.state.read().is_done()
             class:error=move || task.state.read().is_error()
+            class:removing=move || task.is_removing.get()
+            on:animationend=move |ev| {
+                if ev.animation_name() == "fade-out" {
+                    log::debug!("animation end, remove");
+                    *set_remove_pending_count.write() -= 1;
+                }
+            }
         >
             <div class="columns">
                 <div class="state-and-title">{state_label}{title}</div>
