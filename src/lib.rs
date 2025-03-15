@@ -77,13 +77,13 @@ impl LineStrip {
     }
 }
 
-#[derive(Debug, Clone, Store, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Store, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Options {
     pub ass_charset: String,
     pub srt_charset: String,
     pub chinese_convertion: ChineseConvertion,
     pub line_strip: LineStrip,
-    pub offset_secs: f32,
+    pub offset_millis: i32,
     pub no_zip: bool,
 }
 

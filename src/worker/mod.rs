@@ -2,7 +2,7 @@ mod subtitle;
 mod zip;
 
 use chardetng::EncodingDetector;
-use encoding_rs::Encoding;
+use encoding_rs::{Encoding, UTF_8, UTF_16BE, UTF_16LE};
 use futures::channel::oneshot::Canceled;
 use gloo_net::http::Request;
 use js_sys::{Array, Uint8Array};
@@ -30,6 +30,8 @@ pub enum ConvertError {
     FetchDict(String),
     #[error("unknown encoding label `{0}`")]
     EncodingLabel(String),
+    #[error("utf-16 as output is not supported")]
+    Utf16Output,
     #[error("failed to guess input encoding")]
     EncodingDetect,
     #[error("ass format error: {0}")]
@@ -200,11 +202,14 @@ fn convert_single_file(
             .ok_or(ConvertError::EncodingLabel(opts.ass_charset.clone()))?
     };
     let srt_charset = if opts.srt_charset.is_empty() {
-        ass_charset
+        UTF_8
     } else {
         Encoding::for_label(opts.srt_charset.as_bytes())
             .ok_or(ConvertError::EncodingLabel(opts.srt_charset.clone()))?
     };
+    if srt_charset == UTF_16BE || srt_charset == UTF_16LE {
+        return Err(ConvertError::Utf16Output);
+    }
 
     // set text map (for line strip & chinese convertion)
     let text_map = for<'a> |text: Cow<'a, str>| -> Cow<'a, str> {
@@ -220,16 +225,20 @@ fn convert_single_file(
     let (ass, ass_charset, has_error) = ass_charset.decode(input);
     meta.input_encoding.insert(ass_charset.name().to_string());
     meta.decode_error = has_error;
-    let srt = subtitle::ass_to_srt(&ass, true, Some(text_map), opts.offset_secs)?;
+    let offset_secs = (opts.offset_millis as f32) / 1000.0;
+    let srt = subtitle::ass_to_srt(&ass, true, Some(text_map), offset_secs)?;
 
     // encode
-    // TODO: insert BOM for utf-16
-    let (output, srt_charset, has_error) = srt_charset.encode(&srt);
-    meta.output_encoding.insert(srt_charset.name().to_string());
-    meta.encode_error = has_error;
-
-    // TODO: remove clone for utf-8 output
-    Ok((output.into_owned().into_boxed_slice(), meta))
+    if srt_charset == UTF_8 {
+        meta.output_encoding.insert(srt_charset.name().to_string());
+        meta.encode_error = false;
+        Ok((srt.into_bytes().into_boxed_slice(), meta))
+    } else {
+        let (output, srt_charset, has_error) = srt_charset.encode(&srt);
+        meta.output_encoding.insert(srt_charset.name().to_string());
+        meta.encode_error = has_error;
+        Ok((output.into_owned().into_boxed_slice(), meta))
+    }
 }
 
 fn create_blob<T: AsRef<[u8]>>(buf: T, mime: &str) -> Result<Blob, JsValue> {

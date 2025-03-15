@@ -12,10 +12,9 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
     view! {
         <datalist id="charsets">
             <option label=move || t_string!(i18n, opt_charset_utf8) value="UTF-8" />
-            <option label=move || t_string!(i18n, opt_charset_utf16) value="UTF-16" />
             <option label=move || t_string!(i18n, opt_charset_gb) value="GB18030" />
             <option label=move || t_string!(i18n, opt_charset_big5) value="Big5" />
-            <option label=move || t_string!(i18n, opt_charset_jis) value="Shift-JIS" />
+            <option label=move || t_string!(i18n, opt_charset_jis) value="Shift_JIS" />
         </datalist>
         <label for="in-charset">{t!(i18n, opt_ass_encoding_label)}</label>
         <input
@@ -84,8 +83,8 @@ pub(crate) fn OptionsForm(options: Store<Options>) -> impl IntoView {
             pattern=r"-?\d*\.?\d{0,3}"
             bind:value=offset_string
             on:blur=move |_| {
-                let offset = offset_string.get().parse().unwrap_or_default();
-                options.offset_secs().set(offset);
+                let offset: f32 = offset_string.get().parse().unwrap_or_default();
+                options.offset_millis().set((offset / 1000.0).round() as i32);
             }
         />
 
