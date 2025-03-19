@@ -10,6 +10,7 @@
   "error_encoding_detect": "Failed to detect the encoding of the input file",
   "error_utf16_output": "UTF-16 output is not longer supported",
   "error_canceled": "Canceled",
+  "error_zip": "Zip file error: {{ msg }}",
   "error_js_error": "{{ name }}: {{ msg }}",
   "error_format_no_format_line": "\"[Events] => Format\" line not found in the input file",
   "error_format_no_format_line_field": "Field \"{{ field }}\" not found in the \"Format\" line",

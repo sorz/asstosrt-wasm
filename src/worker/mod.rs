@@ -1,5 +1,4 @@
 mod subtitle;
-mod zip;
 
 use chardetng::EncodingDetector;
 use encoding_rs::{Encoding, UTF_8, UTF_16BE, UTF_16LE};
@@ -8,10 +7,20 @@ use gloo_net::http::Request;
 use js_sys::{Array, Uint8Array};
 use serde::{Deserialize, Serialize};
 use simplecc::Dict;
-use std::{borrow::Cow, collections::HashSet, io::Cursor, ops::AddAssign};
+use std::{
+    borrow::Cow,
+    collections::HashSet,
+    io::{Cursor, Write},
+    ops::AddAssign,
+};
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
 use web_sys::{Blob, BlobPropertyBag, File, FileReaderSync, Url};
+use zip::{
+    CompressionMethod,
+    result::ZipError,
+    write::{SimpleFileOptions, ZipWriter},
+};
 
 use crate::{FileWrap, Options, TaskRequest, TaskResult};
 pub(crate) use subtitle::FormatError;
@@ -38,6 +47,8 @@ pub enum ConvertError {
     Format(#[from] FormatError),
     #[error("canceled")]
     Canceled,
+    #[error("zip file error: {0}")]
+    Zip(String),
     #[error("{name}: {msg}")]
     JsError { name: String, msg: String },
 }
@@ -63,6 +74,12 @@ impl From<JsValue> for ConvertError {
 impl From<Canceled> for ConvertError {
     fn from(_: Canceled) -> Self {
         Self::Canceled
+    }
+}
+
+impl From<ZipError> for ConvertError {
+    fn from(value: ZipError) -> Self {
+        Self::Zip(value.to_string())
     }
 }
 
@@ -126,7 +143,6 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
     };
 
     let reader = FileReaderSync::new()?;
-    // TODO: check & limit input file size
     let (content, meta, mime) = if task.files.len() <= 1 {
         // single file, no zip
         let input_buf = {
@@ -153,8 +169,9 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
             (name, content)
         });
         let mut input_buf = vec![0u8; 0];
-        let mut output_buf = Cursor::new(Vec::new());
-        let mut zip = zip::ZipWriter::new(&mut output_buf);
+        let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
+        let zip_file_opt =
+            SimpleFileOptions::default().compression_method(CompressionMethod::STORE);
         let mut meta = ConvertMeta::default();
         for (name, file) in files {
             let file = file.expect("failed to open file");
@@ -162,10 +179,11 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
             file.copy_to(&mut input_buf);
             let (output, meta_) = convert_single_file(&input_buf, &task.options, &dict)?;
             meta += meta_;
-            zip.write_file(&name, output.as_ref()).unwrap();
+            zip.start_file(name, zip_file_opt)?;
+            zip.write_all(&output).unwrap();
         }
-        zip.close().unwrap();
-        (output_buf.into_inner().into_boxed_slice(), meta, MIME_ZIP)
+        let zip = zip.finish()?;
+        (zip.into_inner().into_boxed_slice(), meta, MIME_ZIP)
     };
     // create blob url
     let file_blob = create_blob(&content, mime)?;

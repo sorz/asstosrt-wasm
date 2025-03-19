@@ -105,6 +105,7 @@ fn TaskItem(task: Task, set_remove_pending_count: WriteSignal<usize>) -> impl In
                     ConvertError::EncodingDetect => t!(i18n, error_encoding_detect).into_any(),
                     ConvertError::Utf16Output => t!(i18n, error_utf16_output).into_any(),
                     ConvertError::Canceled => t!(i18n, error_canceled).into_any(),
+                    ConvertError::Zip(msg) => t!(i18n, error_zip, msg).into_any(),
                     ConvertError::JsError { name, msg } => {
                         t!(i18n, error_js_error, name, msg).into_any()
                     }
