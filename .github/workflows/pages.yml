@@ -1,0 +1,48 @@
+name: Deploy to Pages
+on:
+  push:
+    branches: [$default-branch]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Install Trunk
+        uses: jetli/trunk-action@v0.5.0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Build app
+        run: trunk build --release --public-url "${{ steps.pages.outputs.base_path }}"
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
