@@ -5,10 +5,9 @@ use converter::Converter;
 use i18n::I18nContextProvider;
 use leptos::prelude::*;
 use leptos_meta::*;
-use leptos_router::{components::*, path};
 use strum::{AsRefStr, Display, EnumString};
 
-use pages::{home::Home, not_found::NotFound};
+use pages::home::Home;
 
 mod components;
 mod converter;
@@ -41,11 +40,7 @@ pub fn App() -> impl IntoView {
             />
             <Meta charset="UTF-8" />
             <Meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <Router>
-                <Routes fallback=NotFound>
-                    <Route path=path!("/") view=Home />
-                </Routes>
-            </Router>
+            <Home />
         </I18nContextProvider>
     }
 }
