@@ -5,7 +5,7 @@ use futures::{
 use send_wrapper::SendWrapper;
 use std::sync::Arc;
 use wasm_bindgen::prelude::*;
-use web_sys::{File, MessageEvent, Worker, WorkerOptions, WorkerType};
+use web_sys::{window, File, MessageEvent, Worker, WorkerOptions, WorkerType};
 
 use crate::{ConvertMeta, FileWrap, Options, TaskRequest, WorkerMessage, worker::ConvertError};
 
@@ -35,12 +35,17 @@ pub(crate) struct Inner {
 }
 
 impl Inner {
+    fn get_uri() -> Option<String> {
+        window()?.document()?.document_element()?.get_attribute("data-worker-uri")
+    }
+
     fn new() -> Self {
-        log::debug!("spawning worker");
+        let uri = Self::get_uri().unwrap_or("./worker_loader.js".to_string());
+        log::debug!("spawning worker from {}", uri);
         let opts = WorkerOptions::new();
         opts.set_type(WorkerType::Module);
         let worker: Worker =
-            Worker::new_with_options("./worker_loader.js", &opts).expect("failed to spawn worker");
+            Worker::new_with_options(&uri, &opts).expect("failed to spawn worker");
 
         let (ready_tx, ready_rx) = channel::<()>();
         let worker_ = worker.clone();
