@@ -1,4 +1,5 @@
 mod subtitle;
+mod walk;
 
 use chardetng::EncodingDetector;
 use encoding_rs::{Encoding, UTF_8, UTF_16BE, UTF_16LE};
@@ -14,6 +15,7 @@ use std::{
     ops::AddAssign,
 };
 use thiserror::Error;
+use walk::{FileWalk, ReadToVec};
 use wasm_bindgen::prelude::*;
 use web_sys::{Blob, BlobPropertyBag, File, FileReaderSync, Url};
 use zip::{
@@ -25,7 +27,7 @@ use zip::{
 use crate::{FileWrap, Options, TaskRequest, TaskResult};
 pub(crate) use subtitle::FormatError;
 
-const FILE_SIZE_LIMIT: usize = 200 * 1024 * 1024;
+pub(crate) const FILE_SIZE_LIMIT: usize = 100 * 1024 * 1024;
 const MIME_SRT: &str = "text/srt";
 const MIME_ZIP: &str = "application/zip";
 
@@ -143,16 +145,15 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
     };
 
     let reader = FileReaderSync::new()?;
-    let (content, meta, mime) = if task.files.len() <= 1 {
+    let (content, meta, mime) = if task.files.len() <= 1
+        && !task.files[0]
+            .0
+            .name()
+            .to_ascii_lowercase()
+            .ends_with(".zip")
+    {
         // single file, no zip
-        let input_buf = {
-            let file = &task.files.first().ok_or(ConvertError::NoFile)?.0;
-            check_file_size(file)?;
-            let array = reader.read_as_array_buffer(file)?;
-            let mut buf = vec![0u8; array.byte_length().try_into().unwrap()];
-            Uint8Array::new(&array).copy_to(&mut buf);
-            buf
-        };
+        let input_buf = reader.read_to_vec(&task.files.first().ok_or(ConvertError::NoFile)?.0)?;
         let (output, meta) = convert_single_file(&input_buf, &task.options, &dict)?;
         (output, meta, MIME_SRT)
     } else {
@@ -161,26 +162,17 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
             check_file_size(file)?;
         }
         // mulpitle files, with zip
-        let files = task.files.into_iter().map(|file| {
-            let name = file.0.name().trim_end_matches(".ass").to_string() + ".srt";
-            let content = reader
-                .read_as_array_buffer(&file.0)
-                .map(|array| Uint8Array::new(&array));
-            (name, content)
-        });
-        let mut input_buf = vec![0u8; 0];
+        let mut meta = ConvertMeta::default();
         let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
         let zip_file_opt =
-            SimpleFileOptions::default().compression_method(CompressionMethod::STORE);
-        let mut meta = ConvertMeta::default();
-        for (name, file) in files {
-            let file = file.expect("failed to open file");
-            input_buf.resize(file.length().try_into().unwrap(), 0);
-            file.copy_to(&mut input_buf);
-            let (output, meta_) = convert_single_file(&input_buf, &task.options, &dict)?;
+            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        for result in FileWalk::new(task.files, reader) {
+            let (mut path, buf) = result?;
+            path.set_extension("srt");
+            let (output, meta_) = convert_single_file(&buf, &task.options, &dict)?;
             meta += meta_;
-            zip.start_file(name, zip_file_opt)?;
-            zip.write_all(&output).unwrap();
+            zip.start_file(path.to_string_lossy(), zip_file_opt)?;
+            zip.write_all(&output).map_err(ZipError::Io)?;
         }
         let zip = zip.finish()?;
         (zip.into_inner().into_boxed_slice(), meta, MIME_ZIP)

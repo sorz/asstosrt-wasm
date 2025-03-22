@@ -32,7 +32,7 @@ pub(crate) fn FileInput(#[prop(into)] on_files: UnsyncCallback<(Vec<File>,), ()>
                 <input
                     type="file"
                     id="files"
-                    accept=".ass, .ssa"
+                    accept=".ass, .ssa, .zip"
                     multiple
                     on:change:target=move |ev| {
                         if let Some(files) = ev.target().files() {
