@@ -29,7 +29,7 @@ pub fn Home() -> impl IntoView {
             let mut conv = converter.lock().await;
             let files = task.set_working().expect("try to work on non-pending task");
             match conv.convert(options, files).await {
-                Ok((file, meta)) => task.set_done(file, meta),
+                Ok(file) => task.set_done(file),
                 Err(msg) => task.set_error(msg),
             }
         }

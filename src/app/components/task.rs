@@ -126,15 +126,15 @@ fn TaskItem(task: Task, set_remove_pending_count: WriteSignal<usize>) -> impl In
             </p>
         }
         .into_any(),
-        TaskState::Done { meta, .. } if meta.has_error() => {
-            let meta_ = meta.clone();
+        TaskState::Done(file) if file.meta.has_error() => {
+            let meta_ = file.meta.clone();
             let input = move || display_encodings(meta_.input_encoding.clone());
-            let meta_ = meta.clone();
+            let meta_ = file.meta.clone();
             let output = move || display_encodings(meta_.output_encoding.clone());
             view! {
                 <p class="error">
                     "⚠️"
-                    {match (meta.decode_error, meta.encode_error) {
+                    {match (file.meta.decode_error, file.meta.encode_error) {
                         (true, false) => t!(i18n, warning_decoding, input).into_any(),
                         (false, true) => t!(i18n, warning_encoding, output).into_any(),
                         (true, true) => {
@@ -149,20 +149,18 @@ fn TaskItem(task: Task, set_remove_pending_count: WriteSignal<usize>) -> impl In
         TaskState::Done { .. } | TaskState::Pending { .. } | TaskState::Working => ().into_any(),
     };
 
-    let download_link = move || {
-        view! {
+    let download_link = move || match task.state.get() {
+        TaskState::Done(file) => Some(view! {
             <a
                 class="download"
-                href=move || match task.state.get() {
-                    TaskState::Done { file, .. } => Some(file.to_string()),
-                    _ => None,
-                }
-                prop:download=move || task.output_filename()
-                prop:title=move || task.output_filename()
+                href=file.url.to_string()
+                prop:download=file.name.clone()
+                prop:title=file.name.clone()
             >
                 "💾"
             </a>
-        }
+        }),
+        _ => None,
     };
     view! {
         <li

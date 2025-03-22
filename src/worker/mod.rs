@@ -5,7 +5,7 @@ use chardetng::EncodingDetector;
 use encoding_rs::{Encoding, UTF_8, UTF_16BE, UTF_16LE};
 use futures::channel::oneshot::Canceled;
 use gloo_net::http::Request;
-use js_sys::{Array, Uint8Array};
+use js_sys::{Array, Date, Uint8Array};
 use serde::{Deserialize, Serialize};
 use simplecc::Dict;
 use std::{
@@ -145,23 +145,52 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
     };
 
     let reader = FileReaderSync::new()?;
-    let (content, meta, mime) = if task.files.len() <= 1
+    let (content, filename, meta, mime) = if task.files.len() <= 1
         && !task.files[0]
             .0
             .name()
             .to_ascii_lowercase()
             .ends_with(".zip")
     {
-        // single file, no zip
-        let input_buf = reader.read_to_vec(&task.files.first().ok_or(ConvertError::NoFile)?.0)?;
+        // case 1: single ass file, output srt file
+        let file = &task.files.first().ok_or(ConvertError::NoFile)?.0;
+        let input_buf = reader.read_to_vec(file)?;
         let (output, meta) = convert_single_file(&input_buf, &task.options, &dict)?;
-        (output, meta, MIME_SRT)
+        // set filename
+        let mut filename = file.name();
+        set_file_extension(&mut filename, "srt");
+        (output, filename, meta, MIME_SRT)
     } else {
+        // case 2: multiple ass files / zip files (single/multiple/mixed with ass), output zip file
         // check file size
         for FileWrap(file) in task.files.iter() {
             check_file_size(file)?;
         }
-        // mulpitle files, with zip
+        // set filename
+        let filename = if task.files.len() == 1 {
+            // just single zip, append "_srt"
+            let mut filename = task.files[0].0.name();
+            set_file_extension(&mut filename, "");
+            filename.push_str("_srt");
+            set_file_extension(&mut filename, "zip");
+            filename
+        } else {
+            // multiple, guess common prefix
+            let name1 = task.files.first().map(|f| f.0.name()).unwrap();
+            let name2 = task.files.last().map(|f| f.0.name()).unwrap();
+            let common: String = name1
+                .chars()
+                .zip(name2.chars())
+                .take_while(|(c1, c2)| c1 == c2)
+                .map(|(c, _)| c)
+                .collect();
+            if common.len() < 3 {
+                format!("ass2srt_{:.0}.zip", Date::now())
+            } else {
+                format!("{}.zip", common)
+            }
+        };
+        // conversion
         let mut meta = ConvertMeta::default();
         let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
         let zip_file_opt =
@@ -175,12 +204,21 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
             zip.write_all(&output).map_err(ZipError::Io)?;
         }
         let zip = zip.finish()?;
-        (zip.into_inner().into_boxed_slice(), meta, MIME_ZIP)
+        (
+            zip.into_inner().into_boxed_slice(),
+            filename,
+            meta,
+            MIME_ZIP,
+        )
     };
     // create blob url
     let file_blob = create_blob(&content, mime)?;
     let file_url = Url::create_object_url_with_blob(&file_blob)?;
-    Ok(TaskResult { file_url, meta })
+    Ok(TaskResult {
+        filename,
+        file_url,
+        meta,
+    })
 }
 
 fn detect_encoding(input: &[u8]) -> Option<&'static Encoding> {
@@ -257,4 +295,18 @@ fn create_blob<T: AsRef<[u8]>>(buf: T, mime: &str) -> Result<Blob, JsValue> {
     let blob_parts = Array::new();
     blob_parts.push(&Uint8Array::from(buf.as_ref()));
     Blob::new_with_u8_array_sequence_and_options(&blob_parts, &blob_opts)
+}
+
+/// Like PathBuf::set_extension but don't bother with OsStr
+fn set_file_extension(filename: &mut String, extension: &str) {
+    if let Some(n) = filename.rfind('.') {
+        // ignore prefixed dot `.example`
+        if n > 0 {
+            filename.truncate(n);
+        }
+    }
+    if !extension.is_empty() {
+        filename.push('.');
+        filename.push_str(extension);
+    }
 }

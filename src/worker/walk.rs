@@ -130,7 +130,12 @@ impl Iterator for FileWalk {
                 None => {
                     let file = &self.files[self.file_idx];
                     let name: PathBuf = file.0.name().into();
-                    match name.extension().and_then(OsStr::to_str) {
+                    match name
+                        .extension()
+                        .and_then(OsStr::to_str)
+                        .map(str::to_ascii_lowercase)
+                        .as_deref()
+                    {
                         Some("zip") => {
                             self.zip =
                                 match self.reader.read_to_vec(&file.0).and_then(ZipIterator::new) {
