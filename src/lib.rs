@@ -122,6 +122,7 @@ pub enum WorkerMessage {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskResult {
+    filename: String,
     file_url: String,
     meta: ConvertMeta,
 }

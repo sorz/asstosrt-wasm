@@ -10,6 +10,7 @@
   "error_encoding_detect": "無法檢測輸入檔案的編碼",
   "error_utf16_output": "不再支援使用 UTF-16 編碼 SRT 檔案",
   "error_canceled": "已取消",
+  "error_zip": "ZIP 檔案錯誤：{{ msg }}",
   "error_js_error": "{{ name }}: {{ msg }}",
   "error_format_no_format_line": "輸入檔案中缺少 \"[Events] => Format\" 行",
   "error_format_no_format_line_field": "\"Format\" 行中缺少 \"{{ field }}\" 欄位",

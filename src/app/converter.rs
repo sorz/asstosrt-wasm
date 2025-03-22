@@ -7,7 +7,9 @@ use std::sync::Arc;
 use wasm_bindgen::prelude::*;
 use web_sys::{File, MessageEvent, Worker, WorkerOptions, WorkerType, window};
 
-use crate::{ConvertMeta, FileWrap, Options, TaskRequest, WorkerMessage, worker::ConvertError};
+use crate::{
+    ConvertMeta, FileWrap, Options, TaskRequest, TaskResult, WorkerMessage, worker::ConvertError,
+};
 
 use super::task::BlobUrl;
 
@@ -71,7 +73,7 @@ impl Inner {
         &mut self,
         options: Options,
         files: Vec<File>,
-    ) -> Result<(BlobUrl, ConvertMeta), ConvertError> {
+    ) -> Result<ConvertedFile, ConvertError> {
         // wait for worker ready
         if let Some(ready) = self.ready.take() {
             log::debug!("convert: wait for worker ready");
@@ -99,6 +101,23 @@ impl Inner {
         };
         worker.post_message(&serde_wasm_bindgen::to_value(&request).unwrap())?;
         // wait response
-        result_rx.await?.map(|r| (BlobUrl::new(r.file_url), r.meta))
+        result_rx.await?.map(|r| r.into())
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct ConvertedFile {
+    pub(crate) url: BlobUrl,
+    pub(crate) name: String,
+    pub(crate) meta: ConvertMeta,
+}
+
+impl From<TaskResult> for ConvertedFile {
+    fn from(result: TaskResult) -> Self {
+        Self {
+            url: BlobUrl::new(result.file_url),
+            name: result.filename,
+            meta: result.meta,
+        }
     }
 }

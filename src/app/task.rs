@@ -5,7 +5,8 @@ use strum::EnumIs;
 use uuid::Uuid;
 use web_sys::{File, Url};
 
-use crate::{ConvertMeta, worker::ConvertError};
+use super::converter::ConvertedFile;
+use crate::worker::ConvertError;
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Tasks(pub(crate) Vec<Task>);
@@ -80,14 +81,9 @@ pub(crate) struct Task {
 
 #[derive(Debug, Clone, EnumIs)]
 pub(crate) enum TaskState {
-    Pending {
-        files: Vec<File>,
-    },
+    Pending { files: Vec<File> },
     Working,
-    Done {
-        file: Arc<BlobUrl>,
-        meta: Arc<ConvertMeta>,
-    },
+    Done(Arc<ConvertedFile>),
     Error(ConvertError),
 }
 
@@ -111,41 +107,12 @@ impl Task {
             .flatten()
     }
 
-    pub(crate) fn set_done(&self, file: BlobUrl, meta: ConvertMeta) {
-        self.state.set(TaskState::Done {
-            file: file.into(),
-            meta: meta.into(),
-        });
+    pub(crate) fn set_done(&self, file: ConvertedFile) {
+        self.state.set(TaskState::Done(file.into()));
     }
 
     pub(crate) fn set_error(&self, error: ConvertError) {
         self.state.set(TaskState::Error(error))
-    }
-
-    pub(crate) fn output_filename(&self) -> String {
-        let filenames = self.filenames.read();
-        let name1 = filenames.first().and_then(|n| n.strip_suffix(".ass"));
-        let name2 = filenames.last().and_then(|n| n.strip_suffix(".ass"));
-        match (name1, name2) {
-            // zip file
-            (Some(name1), Some(name2)) if name1 != name2 => {
-                let common: String = name1
-                    .chars()
-                    .zip(name2.chars())
-                    .take_while(|(c1, c2)| c1 == c2)
-                    .map(|(c, _)| c)
-                    .collect();
-                if common.is_empty() {
-                    format!("ass2srt-{}.zip", self.id)
-                } else {
-                    format!("{}.zip", common)
-                }
-            }
-            // srt file (w/o zip)
-            (Some(name), _) => format!("{}.srt", name),
-            // unreachable (if no bug)
-            _ => format!("ass2srt-{}.srt", self.id),
-        }
     }
 }
 

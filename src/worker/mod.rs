@@ -1,22 +1,33 @@
 mod subtitle;
-mod zip;
+mod walk;
 
 use chardetng::EncodingDetector;
 use encoding_rs::{Encoding, UTF_8, UTF_16BE, UTF_16LE};
 use futures::channel::oneshot::Canceled;
 use gloo_net::http::Request;
-use js_sys::{Array, Uint8Array};
+use js_sys::{Array, Date, Uint8Array};
 use serde::{Deserialize, Serialize};
 use simplecc::Dict;
-use std::{borrow::Cow, collections::HashSet, io::Cursor, ops::AddAssign};
+use std::{
+    borrow::Cow,
+    collections::HashSet,
+    io::{Cursor, Write},
+    ops::AddAssign,
+};
 use thiserror::Error;
+use walk::{FileWalk, ReadToVec};
 use wasm_bindgen::prelude::*;
 use web_sys::{Blob, BlobPropertyBag, File, FileReaderSync, Url};
+use zip::{
+    CompressionMethod,
+    result::ZipError,
+    write::{SimpleFileOptions, ZipWriter},
+};
 
 use crate::{FileWrap, Options, TaskRequest, TaskResult};
 pub(crate) use subtitle::FormatError;
 
-const FILE_SIZE_LIMIT: usize = 200 * 1024 * 1024;
+pub(crate) const FILE_SIZE_LIMIT: usize = 100 * 1024 * 1024;
 const MIME_SRT: &str = "text/srt";
 const MIME_ZIP: &str = "application/zip";
 
@@ -38,6 +49,8 @@ pub enum ConvertError {
     Format(#[from] FormatError),
     #[error("canceled")]
     Canceled,
+    #[error("zip file error: {0}")]
+    Zip(String),
     #[error("{name}: {msg}")]
     JsError { name: String, msg: String },
 }
@@ -63,6 +76,12 @@ impl From<JsValue> for ConvertError {
 impl From<Canceled> for ConvertError {
     fn from(_: Canceled) -> Self {
         Self::Canceled
+    }
+}
+
+impl From<ZipError> for ConvertError {
+    fn from(value: ZipError) -> Self {
+        Self::Zip(value.to_string())
     }
 }
 
@@ -126,51 +145,80 @@ pub async fn do_conversion_task(task: TaskRequest) -> Result<TaskResult, Convert
     };
 
     let reader = FileReaderSync::new()?;
-    // TODO: check & limit input file size
-    let (content, meta, mime) = if task.files.len() <= 1 {
-        // single file, no zip
-        let input_buf = {
-            let file = &task.files.first().ok_or(ConvertError::NoFile)?.0;
-            check_file_size(file)?;
-            let array = reader.read_as_array_buffer(file)?;
-            let mut buf = vec![0u8; array.byte_length().try_into().unwrap()];
-            Uint8Array::new(&array).copy_to(&mut buf);
-            buf
-        };
+    let (content, filename, meta, mime) = if task.files.len() <= 1
+        && !task.files[0]
+            .0
+            .name()
+            .to_ascii_lowercase()
+            .ends_with(".zip")
+    {
+        // case 1: single ass file, output srt file
+        let file = &task.files.first().ok_or(ConvertError::NoFile)?.0;
+        let input_buf = reader.read_to_vec(file)?;
         let (output, meta) = convert_single_file(&input_buf, &task.options, &dict)?;
-        (output, meta, MIME_SRT)
+        // set filename
+        let mut filename = file.name();
+        set_file_extension(&mut filename, "srt");
+        (output, filename, meta, MIME_SRT)
     } else {
+        // case 2: multiple ass files / zip files (single/multiple/mixed with ass), output zip file
         // check file size
         for FileWrap(file) in task.files.iter() {
             check_file_size(file)?;
         }
-        // mulpitle files, with zip
-        let files = task.files.into_iter().map(|file| {
-            let name = file.0.name().trim_end_matches(".ass").to_string() + ".srt";
-            let content = reader
-                .read_as_array_buffer(&file.0)
-                .map(|array| Uint8Array::new(&array));
-            (name, content)
-        });
-        let mut input_buf = vec![0u8; 0];
-        let mut output_buf = Cursor::new(Vec::new());
-        let mut zip = zip::ZipWriter::new(&mut output_buf);
+        // set filename
+        let filename = if task.files.len() == 1 {
+            // just single zip, append "_srt"
+            let mut filename = task.files[0].0.name();
+            set_file_extension(&mut filename, "");
+            filename.push_str("_srt");
+            set_file_extension(&mut filename, "zip");
+            filename
+        } else {
+            // multiple, guess common prefix
+            let name1 = task.files.first().map(|f| f.0.name()).unwrap();
+            let name2 = task.files.last().map(|f| f.0.name()).unwrap();
+            let common: String = name1
+                .chars()
+                .zip(name2.chars())
+                .take_while(|(c1, c2)| c1 == c2)
+                .map(|(c, _)| c)
+                .collect();
+            if common.len() < 3 {
+                format!("ass2srt_{:.0}.zip", Date::now())
+            } else {
+                format!("{}.zip", common)
+            }
+        };
+        // conversion
         let mut meta = ConvertMeta::default();
-        for (name, file) in files {
-            let file = file.expect("failed to open file");
-            input_buf.resize(file.length().try_into().unwrap(), 0);
-            file.copy_to(&mut input_buf);
-            let (output, meta_) = convert_single_file(&input_buf, &task.options, &dict)?;
+        let mut zip = ZipWriter::new(Cursor::new(Vec::new()));
+        let zip_file_opt =
+            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        for result in FileWalk::new(task.files, reader) {
+            let (mut path, buf) = result?;
+            path.set_extension("srt");
+            let (output, meta_) = convert_single_file(&buf, &task.options, &dict)?;
             meta += meta_;
-            zip.write_file(&name, output.as_ref()).unwrap();
+            zip.start_file(path.to_string_lossy(), zip_file_opt)?;
+            zip.write_all(&output).map_err(ZipError::Io)?;
         }
-        zip.close().unwrap();
-        (output_buf.into_inner().into_boxed_slice(), meta, MIME_ZIP)
+        let zip = zip.finish()?;
+        (
+            zip.into_inner().into_boxed_slice(),
+            filename,
+            meta,
+            MIME_ZIP,
+        )
     };
     // create blob url
     let file_blob = create_blob(&content, mime)?;
     let file_url = Url::create_object_url_with_blob(&file_blob)?;
-    Ok(TaskResult { file_url, meta })
+    Ok(TaskResult {
+        filename,
+        file_url,
+        meta,
+    })
 }
 
 fn detect_encoding(input: &[u8]) -> Option<&'static Encoding> {
@@ -247,4 +295,18 @@ fn create_blob<T: AsRef<[u8]>>(buf: T, mime: &str) -> Result<Blob, JsValue> {
     let blob_parts = Array::new();
     blob_parts.push(&Uint8Array::from(buf.as_ref()));
     Blob::new_with_u8_array_sequence_and_options(&blob_parts, &blob_opts)
+}
+
+/// Like PathBuf::set_extension but don't bother with OsStr
+fn set_file_extension(filename: &mut String, extension: &str) {
+    if let Some(n) = filename.rfind('.') {
+        // ignore prefixed dot `.example`
+        if n > 0 {
+            filename.truncate(n);
+        }
+    }
+    if !extension.is_empty() {
+        filename.push('.');
+        filename.push_str(extension);
+    }
 }
