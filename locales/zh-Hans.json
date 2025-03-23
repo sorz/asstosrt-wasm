@@ -52,5 +52,6 @@
   "footer_browser_compat": "仅支持较新版本的浏览器。如果遇到问题，可以{{ alt }}。",
   "footer_alt": "试试这个",
   "footer_file_stay_local": "您的文件仅在本地处理，不会被上传到任何地方。",
-  "footer_source_code": "源代码可在 {{ github }} 获取。"
+  "footer_donate": "❤️赞助",
+  "footer_source_code": "源代码"
 }

@@ -13,6 +13,9 @@ use crate::{
     },
 };
 
+const DONATE_LINK_STRIPE: &str = "https://donate.stripe.com/bIY4hlbfi5K80fe3cc";
+const GITHUB_LINK: &str = "https://github.com/sorz/asstosrt-wasm";
+
 /// Default Home Page
 #[component]
 pub fn Home() -> impl IntoView {
@@ -105,9 +108,9 @@ pub fn Home() -> impl IntoView {
                 </p>
                 <p>{t!(i18n, footer_file_stay_local)}</p>
                 <p>
-                    {t!(
-                        i18n, footer_source_code, github=|| view! { <a href="https://github.com/sorz/asstosrt-wasm">GitHub</a> }
-                    )}
+                    <a href=DONATE_LINK_STRIPE>{t!(i18n, footer_donate)}</a>
+                    |
+                    <a href=GITHUB_LINK>{t!(i18n, footer_source_code)}</a>
                 </p>
             </footer>
         </div>

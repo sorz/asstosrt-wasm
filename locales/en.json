@@ -52,5 +52,6 @@
   "footer_browser_compat": "Only modern browsers are supported. If it does not work, {{ alt }}.",
   "footer_alt": "try this",
   "footer_file_stay_local": "Your files stay on your device and will NOT be uploaded anywhere.",
-  "footer_source_code": "Source code is available on {{ github }}."
+  "footer_donate": "❤️ Donate",
+  "footer_source_code": "Source Code"
 }
