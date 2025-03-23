@@ -13,6 +13,7 @@ codegen-units = 1
 leptos = { version = "0.7", features = ["csr", "nightly"] }
 leptos_meta = { version = "0.7" }
 leptos_router = { version = "0.7", features = ["nightly"] }
+leptos_i18n = { version = "0.5.11", default-features = false, features = ["csr", "json_files"] }
 reactive_stores = "0.1"
 console_log = "1"
 log = "0.4"
@@ -45,13 +46,6 @@ features = [
     "DataTransfer", "DataTransferItem", "DataTransferItemList",
     "DedicatedWorkerGlobalScope", "Worker", "WorkerOptions", "WorkerType",
 ]
-
-[dependencies.leptos_i18n]
-# Wait for the next release (> 0.5.10) with leptos_i18n#218
-git = "https://github.com/Baptistemontan/leptos_i18n.git"
-rev = "bb46f4c9de629600b15fb8a16d96524a213160f5"
-default-features = false
-features = ["csr", "json_files"]
 
 [package.metadata.leptos-i18n]
 default = "en"
