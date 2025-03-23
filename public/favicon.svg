@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
+  <style>
+    text { fill: black; font-family: monospace; font-weight: bold; }
+    line { stroke: black; }
+    @media (prefers-color-scheme: dark) {
+      text { fill: white; }
+      line { stroke: white; }
+    }
+  </style>
+  <text x="10" y="40" font-size="60" text-anchor="start">A</text>
+  <text x="90" y="90" font-size="60" text-anchor="end">S</text>
+  <line x1="75" y1="25" x2="25" y2="75" stroke-width="6"/>
+</svg>
