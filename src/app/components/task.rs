@@ -5,6 +5,7 @@ use leptos_i18n::{t, t_string};
 
 use crate::{
     app::{
+        components::DonateBanner,
         i18n::use_i18n,
         task::{Task, TaskState, Tasks},
     },
@@ -14,6 +15,8 @@ use crate::{
 #[component]
 pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) -> impl IntoView {
     let i18n = use_i18n();
+    // Set true when user download any srt file
+    let (has_downloaded, set_has_downloaded) = signal(false);
     // Count how many task is playing remove animation
     let (remove_pending_count, set_remove_pending_count) = signal(0);
     // When all animation end, we clear the task list
@@ -40,8 +43,9 @@ pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) 
             <For
                 each=move || tasks.get().0.into_iter().rev()
                 key=|task| task.id
-                children=move |task| view! { <TaskItem task set_remove_pending_count /> }
+                children=move |task| view! { <TaskItem task set_remove_pending_count set_has_downloaded /> }
             />
+            {move || Some(move || view! { <DonateBanner /> }).take_if(|_| has_downloaded())}
             {move || {
                 Some(move || view! { <li class="actions">{clear_button}</li> })
                     .take_if(|_| tasks.get().any_ended())
@@ -51,7 +55,11 @@ pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) 
 }
 
 #[component]
-fn TaskItem(task: Task, set_remove_pending_count: WriteSignal<usize>) -> impl IntoView {
+fn TaskItem(
+    task: Task,
+    set_remove_pending_count: WriteSignal<usize>,
+    set_has_downloaded: WriteSignal<bool>,
+) -> impl IntoView {
     let i18n = use_i18n();
 
     let state_label = move || {
@@ -156,6 +164,7 @@ fn TaskItem(task: Task, set_remove_pending_count: WriteSignal<usize>) -> impl In
                 href=file.url.to_string()
                 prop:download=file.name.clone()
                 prop:title=file.name.clone()
+                on:click=move |_| set_has_downloaded(true)
             >
                 "💾"
             </a>

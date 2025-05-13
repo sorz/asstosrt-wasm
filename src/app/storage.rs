@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use leptos::prelude::*;
+use serde::de::DeserializeOwned;
 use strum::AsRefStr;
 use wasm_bindgen::JsValue;
 
@@ -10,6 +11,7 @@ pub(crate) enum Key {
     Locale,
     Theme,
     Options,
+    HideDonateUntil,
 }
 
 fn local() -> Result<web_sys::Storage, JsValue> {
@@ -31,4 +33,15 @@ pub(crate) fn get(key: Key) -> Result<Option<String>, JsValue> {
 
 pub(crate) fn get_parse<V: FromStr>(key: Key) -> Option<V> {
     get(key).ok().flatten().and_then(|s| s.parse().ok())
+}
+
+pub(crate) fn get_from_json<V: DeserializeOwned>(key: Key) -> Option<V> {
+    get(key)
+        .ok()
+        .flatten()
+        .as_deref()
+        .map(serde_json::from_str)
+        .transpose()
+        .ok()
+        .flatten()
 }

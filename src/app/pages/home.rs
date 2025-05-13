@@ -2,19 +2,17 @@ use leptos::prelude::*;
 use leptos_i18n::{t, t_string};
 use leptos_meta::Title;
 use reactive_stores::Store;
-use web_sys::MouseEvent;
 
 use crate::{
     Options,
     app::{
-        components::{FileInput, OptionsForm, TaskList, ToggleBar},
+        components::{DonateLink, FileInput, OptionsForm, TaskList, ToggleBar},
         converter::Converter,
         i18n::use_i18n,
         task::{Task, Tasks},
     },
 };
 
-const DONATE_LINK_STRIPE: &str = "https://donate.stripe.com/bIY4hlbfi5K80fe3cc";
 const GITHUB_LINK: &str = "https://github.com/sorz/asstosrt-wasm";
 
 /// Default Home Page
@@ -38,14 +36,6 @@ pub fn Home() -> impl IntoView {
             }
         }
     });
-    let donate = move |ev: MouseEvent| {
-        if window()
-            .open_with_url_and_target_and_features(DONATE_LINK_STRIPE, "stripe", "popup,width=480")
-            .is_ok()
-        {
-            ev.prevent_default();
-        }
-    };
     // Schedule task
     Effect::new(move |_| {
         let tasks = tasks.read();
@@ -117,9 +107,7 @@ pub fn Home() -> impl IntoView {
                 </p>
                 <p>{t!(i18n, footer_file_stay_local)}</p>
                 <p>
-                    <a href=DONATE_LINK_STRIPE on:click=donate>
-                        {t!(i18n, footer_donate)}
-                    </a>
+                    <DonateLink />
                     |
                     <a href=GITHUB_LINK>{t!(i18n, footer_source_code)}</a>
                 </p>

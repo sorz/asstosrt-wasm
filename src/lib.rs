@@ -91,15 +91,7 @@ pub struct Options {
 
 impl Options {
     pub(crate) fn load_from_storage() -> Self {
-        storage::get(Key::Options)
-            .ok()
-            .flatten()
-            .as_deref()
-            .map(serde_json::from_str)
-            .transpose()
-            .ok()
-            .flatten()
-            .unwrap_or_default()
+        storage::get_from_json(Key::Options).unwrap_or_default()
     }
 
     pub(crate) fn save_to_storage(&self) -> Result<(), JsValue> {
