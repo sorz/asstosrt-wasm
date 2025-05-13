@@ -4,8 +4,8 @@
 @import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/buttons.min.css";
 @import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/theme.light.switch.min.css";
 @import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/theme.dark.switch.min.css";
-@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/animations.css";
-@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/easings.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/animations.min.css";
+@import "https://cdn.jsdelivr.net/npm/open-props@1.7.13/easings.min.css";
 /* ------------------------------------------------------------ */
 
 @mixin theme-light {
@@ -14,6 +14,7 @@
   --task-bg-color: var(--gray-3);
   --task-bg-color-done: var(--lime-3);
   --task-bg-color-error: var(--red-3);
+  --donate-background: var(--gradient-19);
 }
 
 @mixin theme-dark {
@@ -22,6 +23,7 @@
   --task-bg-color: var(--gray-8);
   --task-bg-color-done: var(--teal-11);
   --task-bg-color-error: var(--red-11);
+  --donate-background: var(--gradient-23);
 }
 
 :root {
@@ -298,5 +300,33 @@ details.options {
       white-space: nowrap;
       overflow: hidden;
     }
+  }
+}
+
+li.donate {
+  align-self: center;
+  padding: var(--size-fluid-4);
+  border-radius: var(--radius-blob-1);
+  background-image: var(--donate-background);
+
+  opacity: 0;
+  animation: var(--animation-fade-in) forwards, var(--animation-slide-in-up);
+  animation-duration: 0.6s;
+  animation-timing-function: var(--ease-out-4);
+
+  &.removing {
+    opacity: 1;
+    animation: var(--animation-slide-out-down), var(--animation-fade-out) forwards;
+    animation-duration: 0.4s;
+    animation-timing-function: var(--ease-out-4);
+  }
+
+  .title {
+    font-size: var(--font-size-4);
+  }
+
+  .buttons {
+    margin-top: var(--size-2);
+    justify-content: space-around;
   }
 }

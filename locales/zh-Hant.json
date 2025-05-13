@@ -53,5 +53,8 @@
   "footer_alt": "試試這個",
   "footer_file_stay_local": "閣下的檔案僅在本地處理，不會被上傳到任何地方。",
   "footer_donate": "❤️抖內",
-  "footer_source_code": "原始碼"
+  "footer_source_code": "原始碼",
+  "donate_banner_title": "好用嗎？",
+  "donate_banner_content": "支持我繼續維護這個免費工具！",
+  "donate_banner_hide": "先不要"
 }

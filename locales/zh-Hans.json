@@ -53,5 +53,8 @@
   "footer_alt": "试试这个",
   "footer_file_stay_local": "您的文件仅在本地处理，不会被上传到任何地方。",
   "footer_donate": "❤️赞助",
-  "footer_source_code": "源代码"
+  "footer_source_code": "源代码",
+  "donate_banner_title": "好用吗？",
+  "donate_banner_content": "支持我继续维护这个免费工具！",
+  "donate_banner_hide": "先不要"
 }

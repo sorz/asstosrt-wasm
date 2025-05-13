@@ -43,9 +43,13 @@ pub(crate) fn TaskList(tasks: ReadSignal<Tasks>, set_tasks: WriteSignal<Tasks>) 
             <For
                 each=move || tasks.get().0.into_iter().rev()
                 key=|task| task.id
-                children=move |task| view! { <TaskItem task set_remove_pending_count set_has_downloaded /> }
+                children=move |task| {
+                    view! { <TaskItem task set_remove_pending_count set_has_downloaded /> }
+                }
             />
-            {move || Some(move || view! { <DonateBanner /> }).take_if(|_| has_downloaded())}
+            <Show when=move || has_downloaded()>
+                <DonateBanner />
+            </Show>
             {move || {
                 Some(move || view! { <li class="actions">{clear_button}</li> })
                     .take_if(|_| tasks.get().any_ended())
@@ -181,7 +185,6 @@ fn TaskItem(
             class:removing=move || task.is_removing.get()
             on:animationend=move |ev| {
                 if ev.animation_name() == "fade-out" {
-                    log::debug!("animation end, remove");
                     *set_remove_pending_count.write() -= 1;
                 }
             }

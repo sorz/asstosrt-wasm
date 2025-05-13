@@ -36,26 +36,35 @@ pub(crate) fn DonateLink() -> impl IntoView {
 pub(crate) fn DonateBanner() -> impl IntoView {
     let i18n = use_i18n();
     let (show, set_show) = signal(HideDonateUntil::load_from_storage().show());
-    log::debug!("show {}", show.get_untracked());
+    let (removing, set_removing) = signal(false);
+
     let on_donate = move |ev: MouseEvent| {
         open_stripe_page(ev);
-        set_show(false);
+        set_removing(true);
         HideDonateUntil::next_month().save_to_storage();
     };
     let on_hide = move |_: MouseEvent| {
-        set_show(false);
+        set_removing(true);
         HideDonateUntil::next_week().save_to_storage();
     };
     let banner = move || {
         view! {
-            <li class="donate">
-                <p class="title">Do you like it?</p>
-                <p>Support me in maintaining this tool!</p>
-                <p>
+            <li
+                class="donate"
+                class:removing=move || removing()
+                on:animationend=move |ev| {
+                    if ev.animation_name() == "fade-out" {
+                        set_show(false);
+                    }
+                }
+            >
+                <p class="title">{t!(i18n, donate_banner_title)}</p>
+                <p>{t!(i18n, donate_banner_content)}</p>
+                <p class="buttons">
                     <a class="btn" href=DONATE_LINK_STRIPE on:click=on_donate>
                         {t!(i18n, footer_donate)}
                     </a>
-                    <button on:click=on_hide>Not now</button>
+                    <button on:click=on_hide>{t!(i18n, donate_banner_hide)}</button>
                 </p>
             </li>
         }
