@@ -42,7 +42,7 @@ def main():
         print("_file_hash({WORKER_LD}) is {ld_hash}", file=sys.stderr)
         sys.exit(1)
     with WORKER_LD.open("w") as f:
-        f.write(f"import init from './{worker_js}';await init('./{worker_wasm}');")
+        f.write(f"import init from './{worker_js}';await init({{module_or_path: './{worker_wasm}'}});")
     worker_ld = _hash_and_rename(WORKER_LD).name
 
     # Update index.html
